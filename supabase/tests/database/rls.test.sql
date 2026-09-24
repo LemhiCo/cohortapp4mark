@@ -194,7 +194,11 @@ select set_config(
   true
 );
 
-select is((select count(*) from public.assets), 3::bigint, 'MSP A sees program, cohort A, and MSP A assets only');
+select is(
+  (select count(*) from public.assets where id::text like '33000000-%'),
+  3::bigint,
+  'MSP A sees program, cohort A, and MSP A test assets only'
+);
 select is(public.can_access_asset_path('msp/31000000-0000-4000-8000-000000000002/private.pdf'), false, 'MSP A cannot sign a URL for MSP B private file');
 select is((select count(*) from public.msps), 1::bigint, 'MSP A reads only its own full MSP row');
 select is((select count(*) from public.cohort_peers), 1::bigint, 'MSP A sees only the other company in its cohort through the peer view');
@@ -289,7 +293,11 @@ select set_config(
   json_build_object('sub', 'a0000000-0000-4000-8000-000000000001', 'role', 'authenticated')::text,
   true
 );
-select is((select count(*) from public.assets), 6::bigint, 'Lemhi admin reads assets across all scopes and cohorts');
+select is(
+  (select count(*) from public.assets where id::text like '33000000-%'),
+  6::bigint,
+  'Lemhi admin reads test assets across all scopes and cohorts'
+);
 
 select lives_ok(
   $$

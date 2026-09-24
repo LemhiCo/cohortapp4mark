@@ -95,3 +95,6 @@ on conflict (id) do update set
 
 -- The 19 starter-file binaries are intentionally not represented as ready assets here.
 -- Add them with scripts/upload-starter-assets.mjs once Lemhi supplies the source files and titles.
+
+-- Populate the reversible fake-data walkthrough after the program template exists.
+select public.seed_demo_content();

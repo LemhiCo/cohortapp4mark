@@ -29,12 +29,12 @@ export function MspPortalForm({ cohortId }: { cohortId: string }) {
           <input className={fieldClass} name="website" type="url" placeholder="https://northstar.example" />
         </label>
         <label className="space-y-2 text-sm font-semibold text-dark-evergreen">
-          <span>Main contact</span>
-          <input className={fieldClass} name="contactName" required autoComplete="name" />
+          <span>Main contact <span className="font-normal text-muted">(optional)</span></span>
+          <input className={fieldClass} name="contactName" autoComplete="name" />
         </label>
         <label className="space-y-2 text-sm font-semibold text-dark-evergreen">
-          <span>Work email</span>
-          <input className={fieldClass} name="contactEmail" type="email" required autoComplete="email" />
+          <span>Work email <span className="font-normal text-muted">(optional)</span></span>
+          <input className={fieldClass} name="contactEmail" type="email" autoComplete="email" />
         </label>
       </div>
 
@@ -43,7 +43,7 @@ export function MspPortalForm({ cohortId }: { cohortId: string }) {
         disabled={pending}
         type="submit"
       >
-        {pending ? "Creating portal…" : "Create portal & send invite"}
+        {pending ? "Creating portal…" : "Create portal"}
       </button>
 
       {state.message ? (

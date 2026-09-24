@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { AppShell } from "@/components/app-shell";
+import { InviteOwnerForm } from "@/components/invite-owner-form";
 import { MspPortalForm } from "@/components/msp-portal-form";
 import { LogoUploadForm } from "@/components/logo-upload-form";
 import { SessionEditor } from "@/components/session-editor";
@@ -81,6 +82,9 @@ export default async function CohortSetupPage({ params }: { params: Promise<{ co
     }
   }
   const ownerByMsp = new Map((owners ?? []).filter((owner) => owner.msp_id).map((owner) => [owner.msp_id as string, owner]));
+  const portalsAwaitingOwner = (msps ?? [])
+    .filter((msp) => !ownerByMsp.has(msp.id) && latestInvitation.get(msp.id)?.status !== "pending")
+    .map((msp) => ({ id: msp.id, name: msp.name }));
   const tzLabel = timezoneLabel(cohort.timezone);
 
   return (
@@ -186,6 +190,21 @@ export default async function CohortSetupPage({ params }: { params: Promise<{ co
           </div>
         </section>
       </div>
+
+      {portalsAwaitingOwner.length ? (
+        <section className="mt-8 rounded-xl border border-line bg-paper p-6 sm:p-8">
+          <div className="max-w-3xl">
+            <p className="text-sm font-bold uppercase tracking-[0.16em] text-accent-orange">Access can come later</p>
+            <h2 className="mt-3 font-serif text-3xl font-bold text-dark-evergreen">Invite a main contact</h2>
+            <p className="mt-3 text-base leading-7 text-muted">
+              Add the portal first, then send access when the contact and email setup are ready.
+            </p>
+          </div>
+          <div className="mt-7 max-w-3xl">
+            <InviteOwnerForm msps={portalsAwaitingOwner} />
+          </div>
+        </section>
+      ) : null}
     </AppShell>
   );
 }

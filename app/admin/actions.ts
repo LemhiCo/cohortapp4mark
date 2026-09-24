@@ -21,6 +21,16 @@ const optionalUrl = z.preprocess(
   z.url().optional(),
 );
 
+const optionalEmail = z.preprocess(
+  (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+  z.email().transform((value) => value.trim().toLowerCase()).optional(),
+);
+
+const optionalName = z.preprocess(
+  (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+  z.string().trim().min(2).max(120).optional(),
+);
+
 const createCohortSchema = z.object({
   leadId: z.uuid(),
   name: z.string().trim().min(2).max(120),
@@ -30,13 +40,17 @@ const createCohortSchema = z.object({
   timezone: z.string().trim().min(1).max(80),
 });
 
-const createMspPortalSchema = z.object({
-  cohortId: z.uuid(),
-  contactEmail: z.email().transform((value) => value.trim().toLowerCase()),
-  contactName: z.string().trim().min(2).max(120),
-  mspName: z.string().trim().min(2).max(120),
-  website: optionalUrl,
-});
+const createMspPortalSchema = z
+  .object({
+    cohortId: z.uuid(),
+    contactEmail: optionalEmail,
+    contactName: optionalName,
+    mspName: z.string().trim().min(2).max(120),
+    website: optionalUrl,
+  })
+  .refine((value) => Boolean(value.contactEmail) === Boolean(value.contactName), {
+    message: "Provide both a contact name and email, or leave both blank.",
+  });
 
 const updateSessionSchema = z.object({
   cohortId: z.uuid(),
@@ -129,7 +143,10 @@ export async function createMspPortal(
   });
 
   if (!parsed.success) {
-    return { status: "error", message: "Enter an MSP name, contact, valid email, and optional full website URL." };
+    return {
+      status: "error",
+      message: "Enter an MSP name and optional full website URL. To invite now, include both the contact name and a valid email.",
+    };
   }
 
   const supabase = await createServerSupabaseClient();
@@ -159,6 +176,12 @@ export async function createMspPortal(
     };
   }
 
+  if (!parsed.data.contactEmail || !parsed.data.contactName) {
+    revalidatePath(`/admin/cohorts/${cohort.id}`);
+    revalidatePath("/admin");
+    return { status: "success", message: `${parsed.data.mspName} is ready. You can invite its main contact later.` };
+  }
+
   const result = await sendPortalInvitation({
     email: parsed.data.contactEmail,
     fullName: parsed.data.contactName,
@@ -169,10 +192,12 @@ export async function createMspPortal(
   });
 
   if (!result.ok) {
-    const admin = createAdminSupabaseClient();
-    const { error: cleanupError } = await admin.from("msps").delete().eq("id", msp.id);
-    if (cleanupError) console.error("MSP portal cleanup failed", cleanupError);
-    return { status: "error", message: result.message };
+    revalidatePath(`/admin/cohorts/${cohort.id}`);
+    revalidatePath("/admin");
+    return {
+      status: "success",
+      message: `${parsed.data.mspName} is ready. ${result.message} You can retry the invitation later.`,
+    };
   }
 
   revalidatePath(`/admin/cohorts/${cohort.id}`);
