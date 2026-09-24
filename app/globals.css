@@ -1,6 +1,9 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=EB+Garamond:wght@600;700&display=swap");
 @import "tailwindcss";
 
 :root {
+  --font-dm-sans: "DM Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-eb-garamond: "EB Garamond", Georgia, "Times New Roman", serif;
   --parchment: #f7f2e8;
   --paper: #fffdf8;
   --forest-ink: #12130f;
