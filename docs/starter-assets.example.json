@@ -1,0 +1,24 @@
+{
+  "programId": "10000000-0000-4000-8000-000000000001",
+  "assets": [
+    { "title": "Replace with final title 01", "file": "01-file.pdf", "category": "documentation" },
+    { "title": "Replace with final title 02", "file": "02-file.pdf", "category": "documentation" },
+    { "title": "Replace with final title 03", "file": "03-file.pdf", "category": "documentation" },
+    { "title": "Replace with final title 04", "file": "04-file.pdf", "category": "documentation" },
+    { "title": "Replace with final title 05", "file": "05-file.pdf", "category": "documentation" },
+    { "title": "Replace with final title 06", "file": "06-file.pdf", "category": "documentation" },
+    { "title": "Replace with final title 07", "file": "07-file.pdf", "category": "documentation" },
+    { "title": "Replace with final title 08", "file": "08-file.pdf", "category": "documentation" },
+    { "title": "Replace with final title 09", "file": "09-file.pdf", "category": "documentation" },
+    { "title": "Replace with final title 10", "file": "10-file.pdf", "category": "documentation" },
+    { "title": "Replace with final title 11", "file": "11-file.pdf", "category": "documentation" },
+    { "title": "Replace with final title 12", "file": "12-file.pdf", "category": "documentation" },
+    { "title": "Replace with final title 13", "file": "13-file.pdf", "category": "documentation" },
+    { "title": "Replace with final title 14", "file": "14-file.pdf", "category": "documentation" },
+    { "title": "Replace with final title 15", "file": "15-file.pdf", "category": "documentation" },
+    { "title": "Replace with final title 16", "file": "16-file.pdf", "category": "marketing_asset" },
+    { "title": "Replace with final title 17", "file": "17-file.pdf", "category": "marketing_asset" },
+    { "title": "Replace with final title 18", "file": "18-file.pdf", "category": "marketing_asset" },
+    { "title": "Replace with final title 19", "file": "19-file.pdf", "category": "marketing_asset" }
+  ]
+}

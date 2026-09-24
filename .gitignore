@@ -1,0 +1,27 @@
+# dependencies
+/node_modules
+
+# next.js
+/.next
+/out
+
+# production
+/build
+
+# local environment files
+.env*
+!.env.example
+
+# logs and tooling
+npm-debug.log*
+.DS_Store
+*.tsbuildinfo
+
+# Supabase local state and seed-file payloads
+/supabase/.branches
+/supabase/.temp
+/starter-assets
+
+# test output
+/playwright-report
+/test-results
