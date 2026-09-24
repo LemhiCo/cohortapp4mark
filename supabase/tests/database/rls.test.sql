@@ -1,9 +1,55 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(27);
+select plan(29);
 
 set local role postgres;
+
+insert into auth.users (
+  id, instance_id, aud, role, email, email_confirmed_at,
+  raw_app_meta_data, raw_user_meta_data, created_at, updated_at
+)
+values (
+  'a3000000-0000-4000-8000-000000000001',
+  '00000000-0000-0000-0000-000000000000',
+  'authenticated',
+  'authenticated',
+  'demo-11111111111111111111@lemhi.com',
+  now(),
+  '{}'::jsonb,
+  '{"demo_access":true,"full_name":"Lemhi Demo Viewer"}'::jsonb,
+  now(),
+  now()
+);
+
+select is(
+  (select role from public.profiles where id = 'a3000000-0000-4000-8000-000000000001'),
+  'msp_member'::public.app_role,
+  'The flagged shared demo user receives MSP member access only'
+);
+
+select throws_ok(
+  $$
+    insert into auth.users (
+      id, instance_id, aud, role, email, email_confirmed_at,
+      raw_app_meta_data, raw_user_meta_data, created_at, updated_at
+    ) values (
+      'a3000000-0000-4000-8000-000000000002',
+      '00000000-0000-0000-0000-000000000000',
+      'authenticated',
+      'authenticated',
+      'spoofed@lemhi.com',
+      now(),
+      '{}'::jsonb,
+      '{}',
+      now(),
+      now()
+    )
+  $$,
+  'P0001',
+  null,
+  'Typing a Lemhi address cannot create an arbitrary privileged auth user'
+);
 
 insert into public.admin_allowlist (email)
 values ('rls-admin@lemhi.com')

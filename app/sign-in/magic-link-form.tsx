@@ -6,7 +6,7 @@ import { requestMagicLink, type MagicLinkState } from "./actions";
 
 const initialState: MagicLinkState = { status: "idle", message: "" };
 
-export function MagicLinkForm() {
+export function MagicLinkForm({ demoMode }: { demoMode: boolean }) {
   const [state, formAction, pending] = useActionState(requestMagicLink, initialState);
 
   return (
@@ -31,7 +31,13 @@ export function MagicLinkForm() {
         disabled={pending}
         className="flex min-h-12 w-full items-center justify-center rounded-md bg-evergreen px-5 text-base font-semibold text-white transition hover:bg-dark-evergreen disabled:cursor-wait disabled:opacity-65"
       >
-        {pending ? "Sending secure link…" : "Email me a sign-in link"}
+        {pending
+          ? demoMode
+            ? "Opening demo portal…"
+            : "Sending secure link…"
+          : demoMode
+            ? "Enter the demo portal"
+            : "Email me a sign-in link"}
       </button>
 
       {state.message ? (

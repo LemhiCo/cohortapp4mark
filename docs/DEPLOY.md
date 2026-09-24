@@ -10,6 +10,7 @@ Set these variables in each Vercel environment:
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` — browser-safe publishable key.
 - `SUPABASE_SECRET_KEY` — server-only secret key; never prefix it with `NEXT_PUBLIC_`.
 - `APP_URL` — the canonical origin, with no trailing slash (for example `https://cohorts.lemhi.ai`).
+- `DEMO_LOGIN_ENABLED` — temporary walkthrough mode. When enabled (or omitted during the prototype), any entered `@lemhi.com` address opens the shared fake MSP as a non-admin member without sending email. Set to `false` to restore real magic-link delivery.
 
 ## First deployment
 

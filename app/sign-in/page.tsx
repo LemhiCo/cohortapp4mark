@@ -8,6 +8,7 @@ type SignInPageProps = {
 
 export default async function SignInPage({ searchParams }: SignInPageProps) {
   const { error } = await searchParams;
+  const demoMode = process.env.DEMO_LOGIN_ENABLED !== "false";
 
   return (
     <main className="grid min-h-screen bg-background lg:grid-cols-[1.05fr_0.95fr]">
@@ -50,7 +51,9 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
             Sign in to your cohort
           </h2>
           <p className="mt-4 text-base leading-7 text-muted">
-            Use the email address where you received your Lemhi invitation. No password required.
+            {demoMode
+              ? "For this team preview, enter any @lemhi.com email address. No email or password is required."
+              : "Use the email address where you received your Lemhi invitation. No password required."}
           </p>
 
           {error ? (
@@ -61,11 +64,13 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
             </p>
           ) : null}
 
-          <MagicLinkForm />
+          <MagicLinkForm demoMode={demoMode} />
 
           <div className="mt-8 border-t border-line pt-6">
             <p className="text-sm leading-6 text-muted">
-              The link expires for your protection. If it does, return here to request a new one.
+              {demoMode
+                ? "Demo access opens a shared workspace with sample data and no admin permissions."
+                : "The link expires for your protection. If it does, return here to request a new one."}
             </p>
           </div>
         </div>
