@@ -23,8 +23,9 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
         />
 
         <div className="relative flex items-center gap-3">
-          <span className="grid size-10 place-items-center rounded-md border border-white/20 font-serif text-2xl font-bold">
-            L
+          <span className="grid size-10 shrink-0 place-items-center rounded-full border border-white/20">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img alt="" aria-hidden="true" className="size-6" src="/logo-mark-white.png" />
           </span>
           <span className="text-sm font-semibold uppercase tracking-[0.22em]">Lemhi</span>
         </div>
