@@ -98,3 +98,4 @@ on conflict (id) do update set
 
 -- Populate the reversible fake-data walkthrough after the program template exists.
 select public.seed_demo_content();
+select public.seed_demo_progress();
