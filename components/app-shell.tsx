@@ -37,15 +37,16 @@ export function AppShell({ activeNav, children, eyebrow, profile, title }: AppSh
           <div className="flex items-center gap-4">
             <Link
               href={isAdmin ? "/admin" : "/cohort"}
-              className="grid size-10 shrink-0 place-items-center rounded-full border border-white/20"
+              className="flex shrink-0 items-center gap-3"
               aria-label="Lemhi Cohort Portal home"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img alt="" aria-hidden="true" className="size-6" src="/logo-mark-white.png" />
+              <img alt="Lemhi" className="h-9 w-auto sm:h-10" src="/logo-mark-white.png" />
+              <span className="font-serif text-2xl font-bold sm:text-3xl">Lemhi</span>
             </Link>
-            <div>
+            <div className="border-l border-white/15 pl-4">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#E7A16D]">{eyebrow}</p>
-              <p className="mt-1 font-serif text-xl font-bold">Lemhi Cohort Portal</p>
+              <p className="mt-1 font-serif text-lg font-bold">Cohort Portal</p>
             </div>
           </div>
 
