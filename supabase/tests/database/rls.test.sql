@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(29);
+select plan(31);
 
 set local role postgres;
 
@@ -49,6 +49,53 @@ select throws_ok(
   'P0001',
   null,
   'Typing a Lemhi address cannot create an arbitrary privileged auth user'
+);
+
+-- The demo "view as" toggle's two fixed identities (app/actions.ts:switchDemoView).
+insert into auth.users (
+  id, instance_id, aud, role, email, email_confirmed_at,
+  raw_app_meta_data, raw_user_meta_data, created_at, updated_at
+)
+values (
+  'a3000000-0000-4000-8000-000000000003',
+  '00000000-0000-0000-0000-000000000000',
+  'authenticated',
+  'authenticated',
+  'demo-admin@lemhi.com',
+  now(),
+  '{}'::jsonb,
+  '{"demo_access":true,"full_name":"Lemhi Demo Admin"}'::jsonb,
+  now(),
+  now()
+);
+
+select is(
+  (select role from public.profiles where id = 'a3000000-0000-4000-8000-000000000003'),
+  'lemhi_admin'::public.app_role,
+  'The fixed demo-admin toggle identity receives admin access'
+);
+
+insert into auth.users (
+  id, instance_id, aud, role, email, email_confirmed_at,
+  raw_app_meta_data, raw_user_meta_data, created_at, updated_at
+)
+values (
+  'a3000000-0000-4000-8000-000000000004',
+  '00000000-0000-0000-0000-000000000000',
+  'authenticated',
+  'authenticated',
+  'demo-client@lemhi.com',
+  now(),
+  '{}'::jsonb,
+  '{"demo_access":true,"full_name":"Lemhi Demo Viewer"}'::jsonb,
+  now(),
+  now()
+);
+
+select is(
+  (select row(role, msp_id) from public.profiles where id = 'a3000000-0000-4000-8000-000000000004'),
+  row('msp_member'::public.app_role, '21000000-0000-4000-8000-000000000001'::uuid),
+  'The fixed demo-client toggle identity is scoped to the seeded demo MSP only'
 );
 
 insert into public.admin_allowlist (email)

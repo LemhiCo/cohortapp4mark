@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import type { CurrentProfile } from "@/lib/auth";
-import { signOut } from "@/app/actions";
+import { signOut, switchDemoView } from "@/app/actions";
 
 type AppShellProps = {
   activeNav?: "cohort" | "checklist" | "library" | "team" | "cohorts" | "admin-library";
@@ -11,8 +11,13 @@ type AppShellProps = {
   title: string;
 };
 
+function isDemoProfileEmail(email: string) {
+  return email.startsWith("demo-") && email.endsWith("@lemhi.com");
+}
+
 export function AppShell({ activeNav, children, eyebrow, profile, title }: AppShellProps) {
   const isAdmin = profile.role === "lemhi_admin";
+  const isDemo = isDemoProfileEmail(profile.email);
   const mspNav = [
     { href: "/cohort", id: "cohort" as const, label: "Cohort" },
     { href: "/checklist", id: "checklist" as const, label: "Checklist" },
@@ -43,7 +48,17 @@ export function AppShell({ activeNav, children, eyebrow, profile, title }: AppSh
             </div>
           </div>
 
-          <div className="flex items-center gap-4 text-sm">
+          <div className="flex items-center gap-3 text-sm">
+            {isDemo ? (
+              <form action={switchDemoView.bind(null, isAdmin ? "client" : "admin")}>
+                <button
+                  type="submit"
+                  className="min-h-10 rounded-md border border-[#E7A16D]/60 bg-[#E7A16D]/15 px-4 font-semibold text-[#E7A16D] transition hover:bg-[#E7A16D]/25"
+                >
+                  Demo: switch to {isAdmin ? "client" : "admin"} view
+                </button>
+              </form>
+            ) : null}
             <div className="hidden text-right sm:block">
               <p className="font-semibold">{profile.full_name || profile.email}</p>
               <p className="text-white/60">{profile.email}</p>
