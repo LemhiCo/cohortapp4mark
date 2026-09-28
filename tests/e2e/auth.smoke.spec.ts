@@ -52,6 +52,7 @@ test("a provisioned MSP password account opens only its own portal", async ({ pa
 
   await expect(page).toHaveURL(/\/cohort$/);
   await expect(page.getByText(passwordAccount.expectedMsp!, { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("Link coming this week").first()).toBeVisible();
 
   await page.goto("/admin");
   await expect(page).toHaveURL(/\/cohort$/);

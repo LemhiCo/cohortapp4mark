@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { AdminTaskButton, AdminTaskNoteForm } from "@/components/admin-task-controls";
 import { AppShell } from "@/components/app-shell";
+import { MspSettingsForm } from "@/components/msp-settings-form";
 import { requireAdminProfile } from "@/lib/auth";
 import type { Tables } from "@/lib/database.types";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -142,6 +143,18 @@ export default async function AdminMspPage({ params }: { params: Promise<{ mspId
         </section>
 
         <aside className="space-y-8">
+          <section className="rounded-xl border border-line bg-paper p-6">
+            <p className="text-sm font-bold uppercase tracking-[0.16em] text-accent-orange">Settings</p>
+            <h2 className="mt-2 font-serif text-2xl font-bold text-dark-evergreen">MSP portal</h2>
+            <p className="mt-2 text-sm leading-6 text-muted">Update company details or deactivate access for everyone at this MSP.</p>
+            <MspSettingsForm
+              mspId={msp.id}
+              name={msp.name}
+              status={msp.status}
+              website={msp.website ?? ""}
+            />
+          </section>
+
           <section className="rounded-xl border border-line bg-paper p-6">
             <div className="flex items-end justify-between gap-4"><div><p className="text-sm font-bold uppercase tracking-[0.16em] text-accent-orange">Access</p><h2 className="mt-2 font-serif text-2xl font-bold text-dark-evergreen">People</h2></div><span className="rounded-full bg-sage px-3 py-1 text-sm font-semibold text-dark-evergreen">{people?.filter((person) => person.active).length ?? 0}</span></div>
             <div className="mt-5 divide-y divide-line">

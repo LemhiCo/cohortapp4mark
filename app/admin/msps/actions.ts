@@ -14,6 +14,16 @@ export type AdminMspActionState = {
 
 const taskSchema = z.object({ mspId: z.uuid(), taskId: z.uuid() });
 const noteSchema = taskSchema.extend({ body: z.string().trim().min(1).max(5000) });
+const optionalUrl = z.preprocess(
+  (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+  z.url().optional(),
+);
+const settingsSchema = z.object({
+  mspId: z.uuid(),
+  name: z.string().trim().min(2).max(120),
+  status: z.enum(["active", "deactivated"]),
+  website: optionalUrl,
+});
 
 async function validateTask(mspId: string, taskId: string) {
   const supabase = await createServerSupabaseClient();
@@ -80,4 +90,40 @@ export async function addAdminTaskNote(
   if (error) return { status: "error", message: "The note could not be posted." };
   revalidatePath(`/admin/msps/${msp.id}`);
   return { status: "success", message: "Note posted." };
+}
+
+export async function updateMspSettings(
+  _previousState: AdminMspActionState,
+  formData: FormData,
+): Promise<AdminMspActionState> {
+  await requireAdminProfile();
+  const parsed = settingsSchema.safeParse({
+    mspId: formData.get("mspId"),
+    name: formData.get("name"),
+    status: formData.get("status"),
+    website: formData.get("website"),
+  });
+
+  if (!parsed.success) {
+    return { status: "error", message: "Enter an MSP name and an optional full website URL." };
+  }
+
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase
+    .from("msps")
+    .update({
+      name: parsed.data.name,
+      status: parsed.data.status,
+      website: parsed.data.website ?? null,
+    })
+    .eq("id", parsed.data.mspId);
+
+  if (error) {
+    console.error("MSP settings update failed", error);
+    return { status: "error", message: "The MSP settings could not be saved." };
+  }
+
+  revalidatePath(`/admin/msps/${parsed.data.mspId}`);
+  revalidatePath("/admin");
+  return { status: "success", message: "MSP settings saved." };
 }

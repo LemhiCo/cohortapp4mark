@@ -101,7 +101,8 @@ Temporary passwords are intentionally **not stored in Git, this document, source
 - [ ] Per-MSP hide/add task controls in the admin UI.
 - [ ] Program week/task editor.
 - [ ] Admin UI for editing/deleting existing assets.
-- [ ] Admin UI for deactivating/reactivating MSPs and resetting credentials.
+- [x] Admin UI for editing MSP name/website and deactivating/reactivating portal access.
+- [ ] Admin UI for resetting MSP credentials.
 
 ## 4. MVP scope and definition of done
 
@@ -259,7 +260,7 @@ An `@lemhi.com` address alone must never grant admin access. Admin access requir
 | Mark admin access | Demo admin only | Create real allow-listed password account |
 | Create cohort/MSP | Implemented | Smoke-test once with disposable preview data |
 | Edit sessions | Implemented | “Link coming this week” is complete; add the real schedule |
-| Per-MSP admin view | Implemented | Confirm Mark’s preferred summary/order |
+| Per-MSP admin view | Implemented, including portal settings | Confirm Mark’s preferred summary/order |
 | Scoped asset upload | Implemented | Test program, cohort, and MSP scope in production |
 | Same-day session package | Partially implemented | Generic uploads work; guided recording/transcript/summary flow remains |
 | Global admin dashboard | Basic cohort pulse implemented | Add stuck-task ranking and richer rollups after launch |
@@ -519,7 +520,7 @@ These should not delay the separate-account MVP unless Mark identifies one as im
 - Per-MSP task hiding and extra-task controls
 - Program editor
 - Admin asset edit/delete controls
-- MSP deactivation/reactivation UI
+- MSP credential reset UI
 - Avoma ingestion automation
 - Reminder and recap emails
 - Single sign-on with the Lemhi platform
