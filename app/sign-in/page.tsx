@@ -8,7 +8,7 @@ type SignInPageProps = {
 
 export default async function SignInPage({ searchParams }: SignInPageProps) {
   const { error } = await searchParams;
-  const demoMode = process.env.DEMO_LOGIN_ENABLED !== "false";
+  const demoMode = process.env.NODE_ENV !== "production" && process.env.DEMO_LOGIN_ENABLED === "true";
 
   return (
     <main className="grid min-h-screen bg-background lg:grid-cols-[1.05fr_0.95fr]">

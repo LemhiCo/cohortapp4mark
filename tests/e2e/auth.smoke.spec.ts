@@ -5,8 +5,14 @@ const passwordAccount = {
   expectedMsp: process.env.PLAYWRIGHT_EXPECTED_MSP,
   password: process.env.PLAYWRIGHT_MSP_PASSWORD,
 };
+const adminAccount = {
+  email: process.env.PLAYWRIGHT_ADMIN_EMAIL,
+  password: process.env.PLAYWRIGHT_ADMIN_PASSWORD,
+};
+const demoEnabled = process.env.PLAYWRIGHT_DEMO_ENABLED !== "false";
 
 test("a Lemhi email enters the shared demo portal without an email round trip", async ({ page }, testInfo) => {
+  test.skip(!demoEnabled, "Demo access is disabled in production.");
   await page.goto("/sign-in");
   await expect(page.getByRole("heading", { name: "Sign in to your cohort" })).toBeVisible();
   const projectSlug = testInfo.project.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
@@ -17,6 +23,7 @@ test("a Lemhi email enters the shared demo portal without an email round trip", 
 });
 
 test("the demo view toggle switches between the client and admin portals", async ({ page }, testInfo) => {
+  test.skip(!demoEnabled, "Demo access is disabled in production.");
   await page.goto("/sign-in");
   const projectSlug = testInfo.project.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
   await page.getByLabel("Work email").fill(`toggle-smoke-${projectSlug}@lemhi.com`);
@@ -57,4 +64,23 @@ test("a provisioned MSP password account opens only its own portal", async ({ pa
   await page.goto("/admin");
   await expect(page).toHaveURL(/\/cohort$/);
   await expect(page.getByText(passwordAccount.expectedMsp!, { exact: true }).first()).toBeVisible();
+});
+
+test("a provisioned Lemhi admin password account opens the cohort pulse", async ({ page }) => {
+  test.skip(
+    !adminAccount.email || !adminAccount.password,
+    "Set PLAYWRIGHT_ADMIN_EMAIL and PLAYWRIGHT_ADMIN_PASSWORD to run this production smoke test.",
+  );
+
+  await page.goto("/sign-in");
+  await page.getByLabel("Work email").fill(adminAccount.email!);
+  await page.getByLabel(/^Password/).fill(adminAccount.password!);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+
+  await expect(page).toHaveURL(/\/admin$/);
+  await expect(page.getByRole("heading", { name: "Cohort setup" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "What needs attention" })).toBeVisible();
+
+  await page.goto("/cohort");
+  await expect(page).toHaveURL(/\/admin$/);
 });

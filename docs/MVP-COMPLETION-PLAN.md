@@ -87,8 +87,8 @@ Temporary passwords are intentionally **not stored in Git, this document, source
 
 ### Not yet implemented or launch-ready
 
-- [ ] Mark’s real admin account.
-- [ ] Production demo mode disabled.
+- [x] Mark’s real admin account created as `mark.creighton@lemhi.com`.
+- [x] Production demo mode disabled in application code regardless of environment configuration.
 - [ ] Launch-ready cohort name, dates, schedule, websites, logos, and lead profile.
 - [x] The exact “Link coming this week” empty-session treatment is implemented in both session locations.
 - [x] Production browser smoke test passed for all four MSP logins on desktop and mobile.
@@ -272,12 +272,12 @@ An `@lemhi.com` address alone must never grant admin access. Admin access requir
 
 ### Phase 0 — Close the authentication safety gap — RELEASE BLOCKER
 
-- [ ] Obtain Mark’s exact work email and display name.
-- [ ] Add Mark’s email to `admin_allowlist`.
-- [ ] Create and auto-confirm Mark’s Supabase Auth user with a strong temporary password.
-- [ ] Verify the trigger creates an active `lemhi_admin` profile with `msp_id = null`.
+- [x] Obtain Mark’s exact work email and display name.
+- [x] Add Mark’s email to `admin_allowlist`.
+- [x] Create and auto-confirm Mark’s Supabase Auth user with a strong temporary password.
+- [x] Verify the trigger creates an active `lemhi_admin` profile with `msp_id = null`.
 - [ ] Sign in as Mark and verify `/admin`, every cohort, every MSP, and admin library access.
-- [ ] Set `DEMO_LOGIN_ENABLED=false` in Vercel Production.
+- [x] Disable demo sign-in and the demo-role toggle unconditionally in production code.
 - [ ] Redeploy and verify password-free demo entry and the demo-role toggle are unavailable.
 - [ ] Verify all four MSP passwords still work after demo mode is disabled.
 - [ ] Verify all four MSP accounts are redirected away from `/admin`.
@@ -341,10 +341,10 @@ An `@lemhi.com` address alone must never grant admin access. Admin access requir
 
 ### Phase 5 — Automated release verification — RELEASE BLOCKER
 
-- [ ] Start Docker Desktop.
-- [ ] Run `npm run supabase:start`.
-- [ ] Run `npm run supabase:reset`.
-- [ ] Run `npm run test:db` and require all 31 pgTAP assertions to pass.
+- [x] Start Docker Desktop.
+- [x] Run `npm run supabase:start`.
+- [x] Run `npm run supabase:reset`.
+- [x] Run `npm run test:db`; all 31 pgTAP assertions passed on 2026-09-27.
 - [x] Run `npm run lint`.
 - [x] Run `npm run typecheck`.
 - [x] Run `npm run build`.

@@ -23,7 +23,7 @@ function isDemoProfileEmail(email: string) {
  * could in principle call directly.
  */
 export async function switchDemoView(target: "admin" | "client") {
-  if (process.env.DEMO_LOGIN_ENABLED === "false") redirect("/sign-in");
+  if (process.env.NODE_ENV === "production" || process.env.DEMO_LOGIN_ENABLED !== "true") redirect("/sign-in");
 
   const profile = await getCurrentProfile();
   if (!profile || !isDemoProfileEmail(profile.email)) redirect("/sign-in");

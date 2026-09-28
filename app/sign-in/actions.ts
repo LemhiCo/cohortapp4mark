@@ -122,7 +122,7 @@ export async function requestMagicLink(
 
   if (password) return signInWithPassword(email, password);
 
-  if (process.env.DEMO_LOGIN_ENABLED !== "false") {
+  if (process.env.NODE_ENV !== "production" && process.env.DEMO_LOGIN_ENABLED === "true") {
     if (!email.endsWith("@lemhi.com")) {
       return { status: "error", message: "Demo access currently requires an @lemhi.com email address." };
     }
