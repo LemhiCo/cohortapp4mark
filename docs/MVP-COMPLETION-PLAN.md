@@ -4,8 +4,8 @@
 **Production portal:** <https://cohortapp4mark.vercel.app>  
 **Source repository:** <https://github.com/LemhiCo/cohortapp4mark>  
 **Product requirements:** [`docs/PRD.md`](./PRD.md)  
-**Current application commit:** `e16dc4e`  
-**Pending production database change:** `supabase/migrations/20260928000000_launch_cohort_from_scratch.sql` (see Phase 1)
+**Current application commit:** `3aa2990`  
+**Latest production database change:** `20260928000000_launch_cohort_from_scratch.sql`, applied and verified 2026-09-27
 
 ## 1. Purpose of this document
 
@@ -26,16 +26,16 @@ This is an MVP completion target, not the full M2 feature set. Automated email, 
 
 ## 2. Release-blocking warning
 
-**Do not distribute the MSP credentials until the launch migration has been applied in production.**
+**Do not distribute the MSP credentials until each MSP login has been rechecked in production.**
 
-The password-free demo walkthrough is gone from the code (`e16dc4e`), and production has refused new demo sign-ins since `582d2a1`. However, the demo identities created during the walkthrough still exist in the production database until `20260928000000_launch_cohort_from_scratch.sql` runs. `demo-admin@lemhi.com` is an active `lemhi_admin` profile, so any teammate browser that used the admin toggle may still hold an admin session. Applying the migration deletes those users, which also revokes their sessions.
+The password-free demo walkthrough is gone from the code (`e16dc4e`), and production has refused new demo sign-ins since `582d2a1`. The launch migration ran in production on 2026-09-27. It deleted all 11 demo identities, including the `demo-admin@lemhi.com` admin profile, which also revoked any walkthrough sessions still open in teammates’ browsers.
 
 Before sending the portal link to an MSP:
 
 - [x] Create and verify Mark’s real admin account.
 - [x] Remove demo access from the code and redeploy production.
 - [x] Confirm that leaving the password blank no longer opens the demo.
-- [ ] Apply the launch migration in production and run its verification query.
+- [x] Apply the launch migration in production and run its verification query.
 - [ ] Confirm that each MSP password opens only the intended MSP portal.
 
 ## 3. Current production state
@@ -75,18 +75,18 @@ Temporary passwords are intentionally **not stored in Git, this document, source
 
 ### Live but still contains demo values
 
-Everything marked *(migration)* is fixed by `20260928000000_launch_cohort_from_scratch.sql`. Check it off once the migration has run in production and been verified.
+Items marked *(migration)* were fixed by `20260928000000_launch_cohort_from_scratch.sql`, applied and verified in production on 2026-09-27.
 
-- [ ] Cohort is named `Fall 2026 Demo Cohort`. *(migration: becomes `Cohort 1`)*
-- [ ] Cohort start date is `2026-09-14`. *(migration: becomes Mon `2026-09-28`, confirmed by Felipe)*
+- [x] Cohort is now named `Cohort 1`. *(migration)*
+- [x] Cohort start date is now Mon `2026-09-28`, confirmed by Felipe. *(migration)*
 - [ ] Time zone is `America/New_York`; not yet confirmed with Mark. Kept as-is.
 - [ ] Weekly session time is Monday at 11:00 AM Eastern; not yet confirmed with Mark. Kept as-is; Mark can change any session in Admin → Cohort.
 - [x] All four fake `https://meet.google.com` URLs were cleared; session URLs are now `NULL` until Mark adds Teams links.
-- [ ] MSP websites are all `https://example.com`. *(migration: cleared to empty; Mark fills them in from each MSP’s settings)*
+- [x] The `https://example.com` MSP websites are cleared; Mark fills in the real ones from each MSP’s settings. *(migration)*
 - [ ] MSP logos are not uploaded. Decision: Mark uploads them; initials show until then.
-- [ ] The assigned lead is the demo admin identity, not Mark’s real profile. *(migration: Mark Creighton, Head of Success)*
-- [ ] Demo-only viewer profiles and the `demo-admin`/`demo-client` identities remain. *(migration: deleted, sessions revoked)*
-- [ ] Demo progress, task notes, and completion history remain. Decision: clear in place, keeping MSP IDs and logins. *(migration)*
+- [x] The cohort lead is now Mark Creighton, Head of Success. *(migration)*
+- [x] All 11 demo identities are deleted and their sessions revoked. *(migration)*
+- [x] Demo progress, task notes, and completion history are cleared in place; MSP IDs and logins kept. *(migration)*
 
 ### Not yet implemented or launch-ready
 
@@ -279,10 +279,11 @@ An `@lemhi.com` address alone must never grant admin access. Admin access requir
 - [x] Add Mark’s email to `admin_allowlist`.
 - [x] Create and auto-confirm Mark’s Supabase Auth user with a strong temporary password.
 - [x] Verify the trigger creates an active `lemhi_admin` profile with `msp_id = null`.
-- [ ] Sign in as Mark and verify `/admin`, every cohort, every MSP, and admin library access. *(Needs Mark’s password in a production browser. The same flow passed locally with a test admin, including “What needs attention”.)*
+- [x] Sign in as Mark and verify `/admin`. Production, 2026-09-27 (Felipe): lands on `/admin`, and “What needs attention” lists all four MSPs.
+- [ ] As Mark, open each MSP page and the admin library.
 - [x] Disable demo sign-in and the demo-role toggle unconditionally in production code.
 - [x] Redeploy and verify password-free demo entry and the demo-role toggle are unavailable. Verified on production 2026-09-27: `582d2a1` deployed; a blank password shows the magic-link message and creates no session. Demo code removed in `e16dc4e`.
-- [ ] Apply the launch migration so the leftover demo identities and their sessions are deleted.
+- [x] Apply the launch migration so the leftover demo identities and their sessions are deleted. Production: 0 demo users remain.
 - [ ] Verify all four MSP passwords still work after demo mode is disabled. *(Needs the MSP passwords.)*
 - [ ] Verify all four MSP accounts are redirected away from `/admin`. *(Needs the MSP passwords. Passed locally with a test MSP owner on desktop and mobile.)*
 
@@ -294,13 +295,13 @@ An `@lemhi.com` address alone must never grant admin access. Admin access requir
 - [x] Confirm the start date: Monday `2026-09-28` (Felipe, 2026-09-27).
 - [ ] Confirm time zone and weekly start time with Mark. Until then: Mondays, 11:00 AM `America/New_York`.
 - [ ] Confirm the four session titles and dates. Dates follow from the start date: Sep 28, Oct 5, Oct 12, Oct 19.
-- [ ] Update cohort data and regenerate/correct sessions without changing the MSP IDs. *(Written and rehearsed as `20260928000000`; apply in production.)*
+- [ ] Update cohort data and regenerate/correct sessions without changing the MSP IDs. Cohort data verified in production; the session dates are still to be checked.
 - [x] Replace every placeholder `https://meet.google.com` URL with `NULL` until the real URL exists.
 - [x] Change both empty-link UI locations to **“Link coming this week”**.
 - [ ] Confirm the current-week calculation against the real start date. In the rehearsal, Week 1 begins 2026-09-28. Known issue: `cohort_current_week()` uses the database date in UTC, so the week turns over at 8 PM Eastern the evening before.
-- [ ] Remove `status_override = active` unless Mark explicitly needs the override. *(In the migration.)*
+- [x] Remove `status_override = active`. Production: now `NULL`.
 - [ ] Confirm the final 30-task roadmap text. Resolve the PRD’s 27-versus-30 source inconsistency.
-- [ ] Clear demo completions and notes. Decision: clear in place, no new cohort. *(In the migration.)*
+- [x] Clear demo completions and notes, in place, no new cohort. Production: 0 completions, 0 notes.
 
 **Applying the launch migration in production.** Paste the whole of `supabase/migrations/20260928000000_launch_cohort_from_scratch.sql` into the Supabase SQL editor for the production project and run it once. It raises an error rather than half-applying if Mark’s admin profile is missing. It only converts the cohort while it is still named `Fall 2026 Demo Cohort`, so replaying it later is harmless. Then run this check:
 
@@ -316,14 +317,28 @@ from public.cohorts c left join public.profiles p on p.id = c.lead_id;
 
 Expected: `Cohort 1`, `2026-09-28`, no override, `mark.creighton@lemhi.com`, `Head of Success`, then `0, 0, 0, 0, 19`.
 
+Applied in production on 2026-09-27. The first run changed nothing: the SQL editor runs the script as one transaction and rolled it back, and the cause wasn’t captured. The second run succeeded and matched every expected value. Follow-up check for the sessions, remaining accounts, and sign-up trigger:
+
+```sql
+select
+  (select string_agg(to_char(starts_at at time zone 'America/New_York', 'Mon DD HH12:MI AM') || coalesce(' ' || join_url, ''), ' | ' order by week_number)
+     from public.sessions where kind = 'group') as sessions_eastern,
+  (select string_agg(role || '=' || n, ', ' order by role)
+     from (select role::text as role, count(*) as n from public.profiles group by role) r) as profiles_by_role,
+  (select prosrc like '%demo-%' from pg_proc where proname = 'handle_new_auth_user') as trigger_has_demo,
+  (select count(*) from pg_proc where proname like 'seed_demo_%') as seed_functions_left;
+```
+
+Expected: `Sep 28 11:00 AM | Oct 05 11:00 AM | Oct 12 11:00 AM | Oct 19 11:00 AM`; one `lemhi_admin` per real Lemhi admin and `msp_owner=4`; `false`; `0`.
+
 **Acceptance:** every MSP sees the same accurate four-week schedule and roadmap; no placeholder meeting URL or fake progress appears.
 
 ### Phase 2 — Complete MSP and lead information — RELEASE BLOCKER
 
 - [ ] Confirm each MSP’s real website. Decision: launch with no website; Mark adds each one in Admin → MSP → Settings.
 - [ ] Obtain and upload each MSP logo, or explicitly accept initials for launch. Decision: initials at launch; Mark uploads logos.
-- [ ] Set Mark as the cohort lead. *(In the migration.)*
-- [ ] Add Mark’s title, contact email, and optional photo to his profile. Mark Creighton, Head of Success, `mark.creighton@lemhi.com`, no photo. *(In the migration.)*
+- [x] Set Mark as the cohort lead. Production: lead is `mark.creighton@lemhi.com`.
+- [x] Add Mark’s title and contact email to his profile: Head of Success, `mark.creighton@lemhi.com`. No photo for now.
 - [ ] Review peer cards from every MSP account.
 - [ ] Remove the temporary demo viewer profiles from Northstar while retaining the real `northstar@lemhi.com` owner. *(In the migration; the rehearsal kept the owner and deleted all demo users.)*
 
@@ -584,6 +599,9 @@ Real Mark admin
 | 2026-09-27 | Claude | Local rehearsal | Launch migration on a production-shaped database | Pass: cohort converted, demo data and users removed, owner and assets kept, demo emails rejected, replay after launch keeps real data |
 | 2026-09-27 | Claude | Local | `npm run test:db` | Pass: 31/31 |
 | 2026-09-27 | Claude | Local production build | `npx playwright test` with local-only admin and MSP accounts | Pass: 16/16, desktop and mobile |
-| — | Felipe | Production | Mark signs in, reaches `/admin`, sees “What needs attention” | Pending |
+| 2026-09-27 | Felipe | Production | Mark signs in, reaches `/admin`, sees “What needs attention” | Pass: all four MSPs listed |
+| 2026-09-27 | Felipe | Production | Launch migration, first run | No effect: rolled back, cause not captured |
+| 2026-09-27 | Felipe | Production | Launch migration, second run, plus verification query | Pass: `Cohort 1`, `2026-09-28`, no override, Mark as lead (Head of Success), `0, 0, 0, 0, 19` |
+| 2026-09-27 | Claude | Production | Admin “Upcoming sessions” showed UTC times (3:00 PM for 11:00 AM ET) | Fixed in `3aa2990` and deployed |
+| — | Felipe | Production | Follow-up check: session dates, accounts by role, trigger | Pending |
 | — | Felipe | Production | One MSP signs in and is redirected away from `/admin` | Pending |
-| — | Felipe | Production | Launch migration applied and verification query matches | Pending |
