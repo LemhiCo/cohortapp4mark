@@ -21,7 +21,7 @@ The MVP is complete when:
 5. Mark can follow progress, complete Lemhi-owned work, exchange task notes, and manage shared files.
 6. The hosted production system passes the RLS, sign-in, portal-isolation, file-access, and admin smoke tests in this document.
 
-This is an MVP completion target, not the full M2 feature set. Automated email, a polished recording workflow, the global analytics dashboard, and deeper editing tools can follow once the first cohort is operating safely.
+This is an MVP completion target, not the full M2 feature set. Automated email, a polished recording workflow, advanced dashboard analysis, and deeper editing tools can follow once the first cohort is operating safely.
 
 ## 2. Release-blocking warning
 
@@ -95,7 +95,8 @@ Temporary passwords are intentionally **not stored in Git, this document, source
 - [ ] Full local RLS suite rerun; Docker Desktop was stopped during the last attempt.
 - [ ] Custom domain such as `cohorts.lemhi.ai`.
 - [ ] Custom SMTP and real invitation delivery. This is not required for the temporary manual-password launch.
-- [ ] Global admin dashboard with behind, inactive, stuck-task, upcoming-session, and cohort rollups.
+- [x] Basic admin cohort pulse with active MSPs, behind status, sign-in/activity status, progress, and upcoming sessions.
+- [ ] Add stuck-task ranking and richer multi-cohort rollups to the admin dashboard.
 - [ ] Session-specific three-file upload workflow for recording, transcript, and summary.
 - [ ] Per-MSP hide/add task controls in the admin UI.
 - [ ] Program week/task editor.
@@ -261,7 +262,7 @@ An `@lemhi.com` address alone must never grant admin access. Admin access requir
 | Per-MSP admin view | Implemented | Confirm Mark’s preferred summary/order |
 | Scoped asset upload | Implemented | Test program, cohort, and MSP scope in production |
 | Same-day session package | Partially implemented | Generic uploads work; guided recording/transcript/summary flow remains |
-| Global admin dashboard | Not implemented | Post-launch unless Mark says it blocks first-cohort operations |
+| Global admin dashboard | Basic cohort pulse implemented | Add stuck-task ranking and richer rollups after launch |
 | Per-MSP task customization | Schema ready, UI absent | Post-launch unless needed for a named MSP now |
 | Program editor | Schema propagates edits, UI absent | Use migration/admin SQL for emergency corrections; build later |
 | Activity tracking | Sign-ins recorded | Build rollups later |
@@ -512,7 +513,7 @@ These should not delay the separate-account MVP unless Mark identifies one as im
 - Custom SMTP and automated invitations
 - Password self-service/reset emails
 - Additional MSP teammates
-- Global multi-cohort dashboard
+- Advanced dashboard analysis and stuck-task ranking
 - Guided recording/transcript/summary upload
 - Per-MSP task hiding and extra-task controls
 - Program editor

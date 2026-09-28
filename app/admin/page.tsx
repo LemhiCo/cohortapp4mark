@@ -36,7 +36,18 @@ export default async function AdminPage() {
   const profile = await requireAdminProfile();
   const supabase = await createServerSupabaseClient();
 
-  const [{ data: cohorts }, { data: admins }, { data: msps }] = await Promise.all([
+  const now = new Date();
+  const sevenDaysAgo = new Date(now);
+  sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 7);
+
+  const [
+    { data: cohorts },
+    { data: admins },
+    { data: msps },
+    { data: owners },
+    { data: progress },
+    { data: upcomingSessions },
+  ] = await Promise.all([
     supabase
       .from("cohorts")
       .select("id, name, start_date, timezone, lead_id, status_override")
@@ -47,17 +58,117 @@ export default async function AdminPage() {
       .eq("role", "lemhi_admin")
       .eq("active", true)
       .order("full_name"),
-    supabase.from("msps").select("id, cohort_id, status"),
+    supabase.from("msps").select("id, name, cohort_id, status").order("name"),
+    supabase
+      .from("profiles")
+      .select("id, msp_id, full_name, email, last_seen_at")
+      .eq("role", "msp_owner")
+      .eq("active", true),
+    supabase
+      .from("msp_progress")
+      .select("msp_id, current_week, overall_completed_tasks, overall_total_tasks, overall_percent, is_behind")
+      .order("week_number"),
+    supabase
+      .from("sessions")
+      .select("id, cohort_id, title, starts_at, join_url")
+      .eq("kind", "group")
+      .gte("starts_at", now.toISOString())
+      .order("starts_at")
+      .limit(5),
   ]);
 
   const adminNames = new Map((admins ?? []).map((admin) => [admin.id, admin.full_name || admin.email]));
+  const cohortNames = new Map((cohorts ?? []).map((cohort) => [cohort.id, cohort.name]));
   const mspCounts = new Map<string, number>();
   for (const msp of msps ?? []) {
     if (msp.status === "active") mspCounts.set(msp.cohort_id, (mspCounts.get(msp.cohort_id) ?? 0) + 1);
   }
+  const activeMsps = (msps ?? []).filter((msp) => msp.status === "active");
+  const ownerByMsp = new Map((owners ?? []).filter((owner) => owner.msp_id).map((owner) => [owner.msp_id as string, owner]));
+  const progressByMsp = new Map<string, NonNullable<typeof progress>[number]>();
+  for (const item of progress ?? []) {
+    if (item.msp_id && !progressByMsp.has(item.msp_id)) progressByMsp.set(item.msp_id, item);
+  }
+  const behindCount = activeMsps.filter((msp) => progressByMsp.get(msp.id)?.is_behind).length;
+  const neverSignedIn = activeMsps.filter((msp) => !ownerByMsp.get(msp.id)?.last_seen_at).length;
+  const inactiveSevenDays = activeMsps.filter((msp) => {
+    const lastSeen = ownerByMsp.get(msp.id)?.last_seen_at;
+    return Boolean(lastSeen && new Date(lastSeen) < sevenDaysAgo);
+  }).length;
+  const sortedMsps = [...activeMsps].sort((left, right) => {
+    const leftProgress = progressByMsp.get(left.id);
+    const rightProgress = progressByMsp.get(right.id);
+    return Number(Boolean(rightProgress?.is_behind)) - Number(Boolean(leftProgress?.is_behind))
+      || (leftProgress?.overall_percent ?? 0) - (rightProgress?.overall_percent ?? 0)
+      || left.name.localeCompare(right.name);
+  });
 
   return (
     <AppShell activeNav="cohorts" eyebrow="Admin" profile={profile} title="Cohort setup">
+      <section className="mb-8 rounded-xl border border-line bg-paper p-6 shadow-[0_18px_50px_rgba(18,19,15,0.06)] sm:p-8">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-sm font-bold uppercase tracking-[0.16em] text-accent-orange">Cohort pulse</p>
+            <h2 className="mt-3 font-serif text-3xl font-bold text-dark-evergreen">What needs attention</h2>
+          </div>
+          <p className="text-sm text-muted">All active MSPs across every cohort</p>
+        </div>
+
+        <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {[
+            ["Active MSPs", activeMsps.length],
+            ["Behind schedule", behindCount],
+            ["Never signed in", neverSignedIn],
+            ["No activity in 7 days", inactiveSevenDays],
+          ].map(([label, value]) => (
+            <div className="rounded-lg border border-line bg-white/65 p-4" key={label}>
+              <p className="text-sm font-semibold text-muted">{label}</p>
+              <p className="mt-2 font-serif text-3xl font-bold text-dark-evergreen">{value}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-7 grid gap-8 xl:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.65fr)]">
+          <div>
+            <h3 className="font-serif text-2xl font-bold text-dark-evergreen">MSP progress</h3>
+            <div className="mt-4 divide-y divide-line">
+              {sortedMsps.length ? sortedMsps.map((msp) => {
+                const owner = ownerByMsp.get(msp.id);
+                const mspProgress = progressByMsp.get(msp.id);
+                return (
+                  <Link className="grid gap-3 py-4 first:pt-0 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center" href={`/admin/msps/${msp.id}`} key={msp.id}>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-dark-evergreen hover:text-evergreen">{msp.name}</p>
+                      <p className="mt-1 truncate text-sm text-muted">{cohortNames.get(msp.cohort_id) ?? "Cohort"} · {owner?.full_name || owner?.email || "No owner account"}</p>
+                    </div>
+                    <span className={`w-fit rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wide ${mspProgress?.is_behind ? "bg-[#F7E4D6] text-[#6B3216]" : "bg-sage text-dark-evergreen"}`}>
+                      {mspProgress?.is_behind ? "Behind" : `Week ${mspProgress?.current_week ?? 0}`}
+                    </span>
+                    <span className="text-sm font-semibold text-evergreen">{mspProgress?.overall_percent ?? 0}% →</span>
+                  </Link>
+                );
+              }) : <p className="text-sm text-muted">No active MSP portals yet.</p>}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="font-serif text-2xl font-bold text-dark-evergreen">Upcoming sessions</h3>
+            <div className="mt-4 space-y-3">
+              {upcomingSessions?.length ? upcomingSessions.map((session) => (
+                <div className="rounded-lg border border-line bg-white/65 p-4" key={session.id}>
+                  <p className="font-semibold text-dark-evergreen">{session.title}</p>
+                  <p className="mt-1 text-sm text-muted">{cohortNames.get(session.cohort_id) ?? "Cohort"}</p>
+                  <p className="mt-2 text-sm font-semibold text-evergreen">
+                    {new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date(session.starts_at))}
+                  </p>
+                  {!session.join_url ? <p className="mt-2 text-xs font-bold uppercase tracking-wide text-accent-orange">Link coming this week</p> : null}
+                </div>
+              )) : <p className="rounded-lg border border-dashed border-line p-4 text-sm text-muted">No upcoming sessions.</p>}
+            </div>
+          </div>
+        </div>
+      </section>
+
       <div className="grid gap-8 xl:grid-cols-[minmax(0,0.92fr)_minmax(460px,1.08fr)]">
         <section className="rounded-xl border border-line bg-paper p-6 shadow-[0_18px_50px_rgba(18,19,15,0.06)] sm:p-8">
           <p className="text-sm font-bold uppercase tracking-[0.16em] text-accent-orange">New cohort</p>
