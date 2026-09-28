@@ -1,11 +1,12 @@
 # Lemhi Cohort Portal — MVP Completion Plan
 
-**Last updated:** 2026-09-27  
+**Last updated:** 2026-09-28  
 **Production portal:** <https://cohortapp4mark.vercel.app>  
 **Source repository:** <https://github.com/LemhiCo/cohortapp4mark>  
 **Product requirements:** [`docs/PRD.md`](./PRD.md)  
 **Current application commit:** `3aa2990`  
-**Latest production database change:** `20260928000000_launch_cohort_from_scratch.sql`, applied and verified 2026-09-27
+**Latest production database change:** `20260928000000_launch_cohort_from_scratch.sql`, applied and verified 2026-09-27  
+**Awaiting merge:** branch `mvp-autonomous`, 8 commits plus this doc update. Apply its three migrations in production first; see [Awaiting review](#awaiting-review).
 
 ## 1. Purpose of this document
 
@@ -99,21 +100,74 @@ Items marked *(migration)* were fixed by `20260928000000_launch_cohort_from_scra
 - [ ] Custom domain such as `cohorts.lemhi.ai`.
 - [ ] Custom SMTP and real invitation delivery. This is not required for the temporary manual-password launch.
 - [x] Basic admin cohort pulse with active MSPs, behind status, sign-in/activity status, progress, and upcoming sessions.
-- [ ] Add stuck-task ranking and richer multi-cohort rollups to the admin dashboard.
-- [ ] Session-specific three-file upload workflow for recording, transcript, and summary.
-- [ ] Per-MSP hide/add task controls in the admin UI.
-- [ ] Program week/task editor.
-- [ ] Admin UI for editing/deleting existing assets.
+- [ ] Add stuck-task ranking and richer multi-cohort rollups to the admin dashboard. *Built on `mvp-autonomous` (`8d81bef`); awaiting merge.*
+- [ ] Session-specific three-file upload workflow for recording, transcript, and summary. *Built on `mvp-autonomous` (`a5f8404`) as recording, transcript, and a typed summary with action items; awaiting merge.*
+- [ ] Per-MSP hide/add task controls in the admin UI. *Built on `mvp-autonomous` (`de263cb`); awaiting merge.*
+- [ ] Program week/task editor. *Built on `mvp-autonomous` (`82675de`), without reordering or moving tasks between weeks; awaiting merge.*
+- [ ] Admin UI for editing/deleting existing assets. *Built on `mvp-autonomous` (`ae8cefd`); awaiting merge.*
+- [ ] Read-only “View as MSP” preview for admins. *Built on `mvp-autonomous` (`9742a86`); awaiting merge.*
 - [x] Admin UI for editing MSP name/website and deactivating/reactivating portal access.
 - [ ] Admin UI for resetting MSP credentials.
 
 ### Awaiting review
 
-These change production behavior, so they are open as pull requests and not merged. Merging to `main` deploys to production.
+These change production behavior, so they are not merged. Merging to `main` deploys to production.
 
-| PR | What it does | Production step after merge |
+| Change | What it does | Status |
 |---|---|---|
-| [#1](https://github.com/LemhiCo/cohortapp4mark/pull/1) | Failed-upload retries no longer create empty library entries | Upload one small file and open it from an MSP account |
+| Branch `mvp-autonomous` | Items 1–9 below | Ready to merge once its three migrations are applied in production |
+| [PR #1](https://github.com/LemhiCo/cohortapp4mark/pull/1) | Failed-upload retries no longer create empty library entries | Superseded by item 2 on the branch. Close it without merging. |
+
+#### Branch `mvp-autonomous`
+
+One commit per item. For every item, the full check passed locally: fresh `supabase db reset`, `test:db`, lint, typecheck, build, and the browser suite against a local production build with local-only test accounts. Those accounts were deleted afterwards. Final state: pgTAP 75/75 and Playwright 32/32.
+
+| # | Item | Commit | New tests | Migration |
+|---|---|---|---|---|
+| 1 | Cohort week and status follow the cohort’s own time zone, so an Eastern cohort no longer turns over at 8 PM the evening before. The admin page now uses the same database functions as the MSP pages. | `3e712c1` | `cohort_time.test.sql` | 1 |
+| 2 | Upload retry fix: a retry resumes only an upload to the same storage path, and an asset is marked ready only if its file exists (otherwise it is marked failed with “Upload it again”). | `49d317f` | `admin-upload.spec.ts` | — |
+| 3 | Admin **Edit** (title, category) and two-step **Delete** in the library. Delete removes the stored file first, then the entry. The operator guide is updated. | `ae8cefd` | `admin-asset-management.spec.ts` | — |
+| 4 | Signed-URL expiry and cross-MSP storage denial | `6ef4889`, already on `main` | `file-access.spec.ts` | — |
+| 5 | **Recordings** screen: upload a session package (recording, transcript, summary, action items) for a group session or a new 1:1 with one MSP. MSPs see the summary and action items beside the video, with a link to the same session’s transcript. | `a5f8404` | `session_packages.test.sql`, `session-package.spec.ts` | 2 |
+| 6 | Admin pulse: **Stuck tasks** (past-week tasks still open, ranked by how many MSPs have them open) and a card for every cohort. | `8d81bef` | `stuck_tasks.test.sql`, `admin-dashboard.spec.ts` | 3 |
+| 7 | On the MSP admin page: **Hide for this MSP** / **Show again** on program tasks, and **Add a Week N task for this MSP** / **Remove** for extra tasks | `de263cb` | `task_customization.test.sql`, `task-customization.spec.ts` | — |
+| 8 | **View as MSP**: a read-only preview of one MSP’s Cohort, Checklist, and Library pages, built from the same components the MSP sees. | `9742a86` | `view-as-msp.spec.ts` | — |
+| 9 | **Program** editor: edit weeks and tasks, add a task, archive and restore. Changes reach upcoming and active cohorts; ended cohorts keep theirs. | `82675de` | `program_editor.test.sql`, `program-editor.spec.ts` | — |
+
+**Migrations to apply in production before merging, in this order.** In the production SQL editor, paste and run each file on its own:
+
+1. `supabase/migrations/20260928010000_cohort_local_time.sql`
+2. `supabase/migrations/20260928020000_one_on_one_sessions.sql`
+3. `supabase/migrations/20260928030000_cohort_stuck_tasks.sql`
+
+The current production code keeps working after all three:
+
+- Migration 1 only changes the moment the week turns over.
+- Migrations 2 and 3 add a function and a view that the current code doesn’t use.
+
+Merging first would break things. **Stuck tasks** would quietly show “Nothing is stuck”, and creating a 1:1 on **Recordings** would fail.
+
+Migrations 1 and 2 are safe to rerun. Migration 3 fails on a rerun with “relation already exists”, which changes nothing. Then check:
+
+```sql
+select c.name,
+  public.effective_cohort_status(c.id) as status,
+  public.cohort_current_week(c.id) as week,
+  (select count(*) from pg_proc where proname = 'create_one_on_one_session') as one_on_one_function,
+  (select count(*) from public.cohort_stuck_tasks) as stuck_tasks
+from public.cohorts c;
+```
+
+Expected from Sep 28 to Oct 4 Eastern: `Cohort 1`, `active`, `1`, `1`, `0`.
+
+**After merging, as Mark or Felipe in production:**
+
+- [ ] `/admin` shows **Stuck tasks** and an **Every cohort** card for Cohort 1 at Week 1.
+- [ ] Upload one small MSP-scoped test file and open it from that MSP’s account, then **Delete** it from the library and confirm the MSP can no longer open it. This also covers PR #1’s check.
+- [ ] **Edit** one starter asset’s title, save it, then change it back.
+- [ ] On one MSP page, **View as MSP** shows its Cohort, Checklist, and Library; **Back to MSP admin** returns.
+- [ ] **Program** says “the 1 upcoming or active cohort”. Don’t save an edit there unless you mean it; it reaches Cohort 1 immediately.
+- [ ] **Recordings** opens and lists Cohort 1’s four group sessions.
 
 ## 4. MVP scope and definition of done
 
@@ -273,10 +327,11 @@ An `@lemhi.com` address alone must never grant admin access. Admin access requir
 | Edit sessions | Implemented | “Link coming this week” is complete; add the real schedule |
 | Per-MSP admin view | Implemented, including portal settings | Confirm Mark’s preferred summary/order |
 | Scoped asset upload | Implemented | Test program, cohort, and MSP scope in production |
-| Same-day session package | Partially implemented | Generic uploads work; guided recording/transcript/summary flow remains |
-| Global admin dashboard | Basic cohort pulse implemented | Add stuck-task ranking and richer rollups after launch |
-| Per-MSP task customization | Schema ready, UI absent | Post-launch unless needed for a named MSP now |
-| Program editor | Schema propagates edits, UI absent | Use migration/admin SQL for emergency corrections; build later |
+| Same-day session package | Built on `mvp-autonomous` | Apply migration 2, merge, and upload the first real recording through **Recordings** |
+| Global admin dashboard | Stuck-task ranking and per-cohort cards built on `mvp-autonomous` | Apply migration 3 and merge |
+| Per-MSP task customization | Built on `mvp-autonomous` | Merge |
+| Program editor | Built on `mvp-autonomous`; no reordering or moving between weeks | Merge; reorder or move tasks with SQL until then |
+| View as MSP | Built on `mvp-autonomous` | Merge |
 | Activity tracking | Sign-ins recorded | Build rollups later |
 
 ## 8. Ordered implementation plan
@@ -306,7 +361,7 @@ An `@lemhi.com` address alone must never grant admin access. Admin access requir
 - [ ] Update cohort data and regenerate/correct sessions without changing the MSP IDs. Cohort data verified in production; the session dates are still to be checked.
 - [x] Replace every placeholder `https://meet.google.com` URL with `NULL` until the real URL exists.
 - [x] Change both empty-link UI locations to **“Link coming this week”**.
-- [ ] Confirm the current-week calculation against the real start date. In the rehearsal, Week 1 begins 2026-09-28. Known issue: `cohort_current_week()` uses the database date in UTC, so the week turns over at 8 PM Eastern the evening before.
+- [ ] Confirm the current-week calculation against the real start date. In the rehearsal, Week 1 begins 2026-09-28. Known issue: `cohort_current_week()` uses the database date in UTC, so the week turns over at 8 PM Eastern the evening before. Fixed on `mvp-autonomous` (`3e712c1`, migration `20260928010000`); live once that migration is applied.
 - [x] Remove `status_override = active`. Production: now `NULL`.
 - [ ] Confirm the final 30-task roadmap text. Resolve the PRD’s 27-versus-30 source inconsistency.
 - [x] Clear demo completions and notes, in place, no new cohort. Production: 0 completions, 0 notes.
@@ -377,8 +432,8 @@ Expected: `Sep 28 11:00 AM | Oct 05 11:00 AM | Oct 12 11:00 AM | Oct 19 11:00 AM
 - [ ] Mark uploads one cohort-scoped document and all four MSPs see it.
 - [ ] Mark uploads one MSP-scoped document and only that MSP sees it.
 - [ ] Mark uploads one representative video and confirms browser playback.
-- [x] Write a one-page Mark operator guide with: sign in, update a session link, check progress, add a note, upload a file, and replace a recording. See [`docs/OPERATOR-GUIDE.md`](./OPERATOR-GUIDE.md). Replacing a recording currently needs Felipe, because the admin cannot delete or edit a file yet.
-- [ ] Fix upload retries. After a failed upload, uploading the same file again resumes the old attempt into the old storage path, and the new library entry is marked ready with no file behind it. Fixed in [PR #1](https://github.com/LemhiCo/cohortapp4mark/pull/1), awaiting review.
+- [x] Write a one-page Mark operator guide with: sign in, update a session link, check progress, add a note, upload a file, and replace a recording. See [`docs/OPERATOR-GUIDE.md`](./OPERATOR-GUIDE.md). On `main`, replacing a recording still needs Felipe. On `mvp-autonomous` the guide also covers editing, deleting, recordings, per-MSP tasks, View as MSP, and the program editor. That matches the app once the branch is merged.
+- [ ] Fix upload retries. After a failed upload, uploading the same file again resumes the old attempt into the old storage path, and the new library entry is marked ready with no file behind it. Fixed on `mvp-autonomous` (`49d317f`), which supersedes [PR #1](https://github.com/LemhiCo/cohortapp4mark/pull/1). It also refuses to mark an asset ready unless its file exists.
 
 **Acceptance:** Mark can run the cohort’s normal weekly work without a developer or direct database access.
 
@@ -397,6 +452,7 @@ Expected: `Sep 28 11:00 AM | Oct 05 11:00 AM | Oct 12 11:00 AM | Oct 19 11:00 AM
 - [x] Confirm signed-out visitors are redirected to `/sign-in`. Production, 2026-09-27: `/cohort`, `/checklist`, `/library`, `/team`, `/admin`, `/admin/library`, and `/admin/msps/…` all return 307 to `/sign-in`; `/api/assets/…` returns 401.
 - [x] Browser suite 16/16 (desktop and mobile) against a local production build with local-only test accounts, 2026-09-27.
 - [x] Confirm asset signed URLs expire and foreign storage paths are denied. Automated in `tests/e2e/file-access.spec.ts`, passing locally on 2026-09-27. An MSP opens its own private file. It cannot list, sign or download another MSP’s file. A signed URL fails after it expires. `/api/assets/<id>` returns 404 for a foreign file. The test creates its own data, so it only runs against a local stack.
+- [x] On `mvp-autonomous` (2026-09-28): `test:db` 75/75 across six pgTAP files, and the browser suite 32/32 against a local production build with local-only accounts. Every new e2e file creates its own data and skips unless both the Supabase URL and the app URL are local.
 
 **Acceptance:** all automated checks are green, and the production acceptance sheet records the tester, date, account, and result.
 
@@ -437,7 +493,7 @@ After each group session, the temporary MVP process is:
 5. Upload or paste the summary/action items using the current asset metadata process.
 6. Sign in as one MSP and confirm playback/download.
 
-The later M2 improvement is one “Upload session package” screen that accepts video, transcript, and summary together and sets scope/session automatically.
+Once `mvp-autonomous` is merged, this becomes one step. Open **Admin → Recordings** and pick the session. Add the recording and transcript, type the summary and action items, and click **Upload session package**. Scope and week are set automatically. A 1:1 creates its own MSP-only session. Step 6 still applies.
 
 ## 10. Manual account provisioning runbook
 
@@ -528,12 +584,13 @@ npm run db:types
 
 ### Deployment
 
-1. Commit verified work to `main`.
-2. Push to GitHub.
-3. Wait for the Vercel production deployment.
-4. Open `/sign-in` and confirm the expected build is live.
-5. Run the production smoke test.
-6. If a deployment fails, inspect Vercel logs before making another change.
+1. Apply any new migrations in production first, in timestamp order, unless the migration says otherwise.
+2. Commit verified work to `main`.
+3. Push to GitHub.
+4. Wait for the Vercel production deployment.
+5. Open `/sign-in` and confirm the expected build is live.
+6. Run the production smoke test.
+7. If a deployment fails, inspect Vercel logs before making another change.
 
 ## 12. Production environment variables
 
@@ -563,6 +620,15 @@ Preview and production must use separate Supabase projects before customer data 
 - [ ] Decision: use the Vercel URL or configure a Lemhi subdomain.
 - [ ] Confirmation that storing client recordings in this standalone Supabase project is approved.
 
+Raised while building `mvp-autonomous`:
+
+- [ ] Mark: does the program editor need task reordering or moving tasks between weeks? It currently adds new tasks at the end of their week.
+- [ ] Felipe: if every file in a 1:1 session package fails to upload, the 1:1 session row it created stays behind. It is harmless, and no MSP sees it without an asset. Is that acceptable, or should the next attempt reuse it?
+- [ ] Felipe: close [PR #1](https://github.com/LemhiCo/cohortapp4mark/pull/1) as superseded by `49d317f`?
+- [ ] Felipe: delete `DEMO_LOGIN_ENABLED` from Vercel. Nothing reads it.
+- [ ] Felipe: run `supabase migration repair` for every migration already pasted into production before anyone uses `supabase db push` (see §11).
+- [ ] Felipe: update the local Supabase CLI past 2.117.0, then drop the Storage index workaround in §11.
+
 ## 14. Deferred until after the minimum launch
 
 These should not delay the separate-account MVP unless Mark identifies one as immediately necessary:
@@ -570,11 +636,8 @@ These should not delay the separate-account MVP unless Mark identifies one as im
 - Custom SMTP and automated invitations
 - Password self-service/reset emails
 - Additional MSP teammates
-- Advanced dashboard analysis and stuck-task ranking
-- Guided recording/transcript/summary upload
-- Per-MSP task hiding and extra-task controls
-- Program editor
-- Admin asset edit/delete controls
+- Advanced dashboard analysis beyond stuck-task ranking and per-cohort cards (those are built on `mvp-autonomous`)
+- Reordering program tasks and moving them between weeks
 - MSP credential reset UI
 - Avoma ingestion automation
 - Reminder and recap emails
@@ -625,3 +688,6 @@ Real Mark admin
 | — | Felipe | Production | Follow-up check: session dates, accounts by role, trigger | Pending |
 | 2026-09-27 | Felipe | Production | All four MSP passwords sign in and are redirected away from `/admin` | Pass |
 | 2026-09-27 | Felipe | Production | As Mark: open all four MSP pages and the admin library | Pass: each MSP page shows 19 visible assets |
+| 2026-09-28 | Claude | Local production build | `mvp-autonomous` items 1–9: reset, `test:db`, lint, typecheck, build, and e2e after each item | Pass after every item; final state `test:db` 75/75, Playwright 32/32 |
+| — | Felipe | Production | Apply migrations `20260928010000`, `20260928020000`, `20260928030000` and run the check in §3 | Pending |
+| — | Felipe or Mark | Production | Post-merge checks for `mvp-autonomous` in §3 | Pending |
