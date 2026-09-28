@@ -4,9 +4,9 @@
 **Production portal:** <https://cohortapp4mark.vercel.app>  
 **Source repository:** <https://github.com/LemhiCo/cohortapp4mark>  
 **Product requirements:** [`docs/PRD.md`](./PRD.md)  
-**Current application commit:** `3aa2990`  
+**Current application commit:** `40d0c0e` (merge of `mvp-autonomous`, 2026-09-28)  
 **Latest production database change:** `20260928030000_cohort_stuck_tasks.sql`, applied with `20260928010000` and `20260928020000` and verified 2026-09-28  
-**Awaiting merge:** branch `mvp-autonomous`. Its three migrations are applied in production, so it is ready to merge; see [Awaiting review](#awaiting-review).
+**Awaiting merge:** branch `fix/session-local-time` (session times showed UTC); see [Awaiting review](#awaiting-review).
 
 ## 1. Purpose of this document
 
@@ -115,7 +115,8 @@ These change production behavior, so they are not merged. Merging to `main` depl
 
 | Change | What it does | Status |
 |---|---|---|
-| Branch `mvp-autonomous` | Items 1–9 below | Ready to merge: its three migrations were applied and verified in production on 2026-09-28 |
+| Branch `fix/session-local-time` | Session times show in the viewer’s time zone. Every opened or refreshed page showed UTC, e.g. “3:00 PM UTC” for 11:00 AM Eastern, for Mark and for MSPs. | Ready to merge; no migration |
+| Branch `mvp-autonomous` | Items 1–9 below | Merged in [#2](https://github.com/LemhiCo/cohortapp4mark/pull/2) on 2026-09-28, after its three migrations |
 | [PR #1](https://github.com/LemhiCo/cohortapp4mark/pull/1) | Failed-upload retries no longer create empty library entries | Superseded by item 2 on the branch. Close it without merging. |
 
 #### Branch `mvp-autonomous`
@@ -682,7 +683,7 @@ Real Mark admin
 | 2026-09-27 | Felipe | Production | Mark signs in, reaches `/admin`, sees “What needs attention” | Pass: all four MSPs listed |
 | 2026-09-27 | Felipe | Production | Launch migration, first run | No effect: rolled back, cause not captured |
 | 2026-09-27 | Felipe | Production | Launch migration, second run, plus verification query | Pass: `Cohort 1`, `2026-09-28`, no override, Mark as lead (Head of Success), `0, 0, 0, 0, 19` |
-| 2026-09-27 | Claude | Production | Admin “Upcoming sessions” showed UTC times (3:00 PM for 11:00 AM ET) | Fixed in `3aa2990` and deployed |
+| 2026-09-27 | Claude | Production | Admin “Upcoming sessions” showed UTC times (3:00 PM for 11:00 AM ET) | Partly fixed in `3aa2990`; still UTC on every full page load, see 2026-09-28 |
 | 2026-09-27 | Claude | Production | Every recent production deployment is a commit on `main` | Pass: last 12 deployments |
 | 2026-09-27 | Claude | Local production build | `tests/e2e/file-access.spec.ts`: own file opens, foreign file denied, signed URL expires, route 404s foreign file | Pass: 4/4 |
 | — | Felipe | Production | Follow-up check: session dates, accounts by role, trigger | Pending |
@@ -690,4 +691,6 @@ Real Mark admin
 | 2026-09-27 | Felipe | Production | As Mark: open all four MSP pages and the admin library | Pass: each MSP page shows 19 visible assets |
 | 2026-09-28 | Claude | Local production build | `mvp-autonomous` items 1–9: reset, `test:db`, lint, typecheck, build, and e2e after each item | Pass after every item; final state `test:db` 75/75, Playwright 32/32 |
 | 2026-09-28 | Felipe | Production | Apply migrations `20260928010000`, `20260928020000`, `20260928030000` and run the check in §3 | Pass: all three succeeded; check returned `Cohort 1, active, 1, 1, 0` |
-| — | Felipe or Mark | Production | Post-merge checks for `mvp-autonomous` in §3 | Pending |
+| 2026-09-28 | Felipe | Production | Post-merge check A for `mvp-autonomous`: admin home after the merge | Pass: Recordings and Program in the menu, “Nothing is stuck from past weeks”, 4 MSPs in Week 1. Found: sessions shown as “3:00 PM UTC” |
+| 2026-09-28 | Claude | Local production build | `session-time.spec.ts` with a Honolulu browser, before and after the fix | Old component: fails with the server’s “11:00 AM EDT” after a reload. Fixed (`793acaa`): pass. Full suite `test:db` 75/75, Playwright 39 passed, 1 skipped (write check) |
+| — | Felipe or Mark | Production | Post-merge checks B–E for `mvp-autonomous` in §3 | Pending |
