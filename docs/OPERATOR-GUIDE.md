@@ -19,6 +19,10 @@ The **What needs attention** panel at the top of Cohort setup covers every activ
 
 To take a link down, clear **Join link** and **Save**; MSPs see “Link coming this week” again.
 
+## Change a cohort’s lead
+
+**Cohorts** → open the cohort → **Lemhi lead**. Pick someone in **Cohort lead** and click **Save lead**. MSPs see the new lead’s name, title, and email on their Cohort page straight away. Anyone with a Lemhi admin login can be chosen; to add someone to the list, ask Felipe for their admin login.
+
 ## Check one MSP and work its checklist
 
 Open the MSP from **MSP progress** or from the cohort’s **MSP portals** list.
@@ -83,5 +87,6 @@ Tasks can’t be reordered or moved to another week yet; ask Felipe.
 ## Ask Felipe for
 
 - New MSP logins, password resets, and extra teammates.
+- New Lemhi admin logins, for example someone else to lead a cohort.
 - Changing a cohort’s name or start date.
 - Reordering tasks or moving one to another week.

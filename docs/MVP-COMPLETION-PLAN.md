@@ -4,9 +4,9 @@
 **Production portal:** <https://cohortapp4mark.vercel.app>  
 **Source repository:** <https://github.com/LemhiCo/cohortapp4mark>  
 **Product requirements:** [`docs/PRD.md`](./PRD.md)  
-**Current application commit:** `40d0c0e` (merge of `mvp-autonomous`, 2026-09-28)  
+**Current application commit:** `ecd238b` (merge of the session-time fix, 2026-09-28)  
 **Latest production database change:** `20260928030000_cohort_stuck_tasks.sql`, applied with `20260928010000` and `20260928020000` and verified 2026-09-28  
-**Awaiting merge:** branch `fix/session-local-time` (session times showed UTC); see [Awaiting review](#awaiting-review).
+**Awaiting merge:** branch `feature/cohort-lead-picker` (change a cohort’s Lemhi lead); see [Awaiting review](#awaiting-review).
 
 ## 1. Purpose of this document
 
@@ -108,6 +108,8 @@ Items marked *(migration)* were fixed by `20260928000000_launch_cohort_from_scra
 - [ ] Read-only “View as MSP” preview for admins. *Built on `mvp-autonomous` (`9742a86`); awaiting merge.*
 - [x] Admin UI for editing MSP name/website and deactivating/reactivating portal access.
 - [ ] Admin UI for resetting MSP credentials.
+- [ ] Admin UI for changing a cohort’s Lemhi lead. *Built on `feature/cohort-lead-picker`; awaiting merge.*
+- [ ] Felipe’s own Lemhi admin login, so Felipe can be chosen as a lead. Created by Felipe in Supabase, following the Lemhi admin steps in §10.
 
 ### Awaiting review
 
@@ -115,9 +117,10 @@ These change production behavior, so they are not merged. Merging to `main` depl
 
 | Change | What it does | Status |
 |---|---|---|
-| Branch `fix/session-local-time` | Session times show in the viewer’s time zone. Every opened or refreshed page showed UTC, e.g. “3:00 PM UTC” for 11:00 AM Eastern, for Mark and for MSPs. | Ready to merge; no migration |
+| Branch `feature/cohort-lead-picker` | **Cohort lead** picker on each cohort’s admin page, listing active Lemhi admins. Mark can switch Cohort 1’s lead, e.g. to Felipe once Felipe has an admin login. | Ready to merge; no migration |
+| Branch `fix/session-local-time` | Session times show in the viewer’s time zone. Every opened or refreshed page showed UTC, e.g. “3:00 PM UTC” for 11:00 AM Eastern, for Mark and for MSPs. | Merged in [#3](https://github.com/LemhiCo/cohortapp4mark/pull/3) on 2026-09-28; verified in production |
 | Branch `mvp-autonomous` | Items 1–9 below | Merged in [#2](https://github.com/LemhiCo/cohortapp4mark/pull/2) on 2026-09-28, after its three migrations |
-| [PR #1](https://github.com/LemhiCo/cohortapp4mark/pull/1) | Failed-upload retries no longer create empty library entries | Superseded by item 2 on the branch. Close it without merging. |
+| [PR #1](https://github.com/LemhiCo/cohortapp4mark/pull/1) | Failed-upload retries no longer create empty library entries | Superseded by item 2 on `mvp-autonomous`. Closed without merging on 2026-09-28. |
 
 #### Branch `mvp-autonomous`
 
@@ -529,6 +532,12 @@ Never create an MSP auth user before its invitation row. The database trigger re
 5. Verify the profile role is `lemhi_admin` and `msp_id` is `NULL`.
 6. Verify `/admin` access.
 
+Without the script, from the Supabase dashboard:
+
+1. SQL editor: `insert into public.admin_allowlist (email, active) values ('<name>@lemhi.com', true) on conflict (email) do update set active = true;`
+2. Authentication → Users → **Add user** → **Create new user**, with the same email, a password from the password manager, and **Auto Confirm User** ticked. This must come after step 1, or the sign-up trigger rejects the user.
+3. SQL editor: `update public.profiles set full_name = '<Full Name>', title = '<Title>' where email = '<name>@lemhi.com' returning role, active, msp_id;` The expected result is `lemhi_admin`, `true`, `NULL`. The name and title are what MSPs see if this person leads their cohort.
+
 Never add an MSP login email to `admin_allowlist`.
 
 ### Password reset during the temporary phase
@@ -695,3 +704,5 @@ Real Mark admin
 | 2026-09-28 | Claude | Local production build | `session-time.spec.ts` with a Honolulu browser, before and after the fix | Old component: fails with the server’s “11:00 AM EDT” after a reload. Fixed (`793acaa`): pass. Full suite `test:db` 75/75, Playwright 39 passed, 1 skipped (write check) |
 | 2026-09-28 | Felipe | Production | Post-merge checks B–E for `mvp-autonomous` in §3, as Mark | Pass: View as MSP (BluePeak); BluePeak-only PDF uploaded, renamed, opened, visible to BluePeak only (Harbor Ridge checked), deleted; Program reach text; Recordings lists 4 sessions |
 | 2026-09-28 | Felipe | Production | Admin “Never signed in: 3”: MSP owners’ `last_seen_at` against Supabase `last_sign_in_at` | Correct: the launch migration cleared `last_seen_at`, and since then only BluePeak has signed in |
+| 2026-09-28 | Felipe | Production | After #3 (`ecd238b`) deployed, hard-refresh `/admin` as Mark | Pass: sessions read “Sep 28, 2026, 11:00 AM EDT” |
+| 2026-09-28 | Claude | Local production build | `feature/cohort-lead-picker`: reset, `test:db`, lint, typecheck, build, e2e | Pass: `test:db` 75/75, Playwright 40 passed, 1 skipped (write check). `cohort-lead.spec.ts` switches the lead, sees the MSP’s lead card update, and has a tampered form refused |
