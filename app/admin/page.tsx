@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { AppShell } from "@/components/app-shell";
 import { CohortCreateForm } from "@/components/cohort-create-form";
+import { SessionTime } from "@/components/session-time";
 import { requireAdminProfile } from "@/lib/auth";
 import type { Enums } from "@/lib/database.types";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -159,7 +160,7 @@ export default async function AdminPage() {
                   <p className="font-semibold text-dark-evergreen">{session.title}</p>
                   <p className="mt-1 text-sm text-muted">{cohortNames.get(session.cohort_id) ?? "Cohort"}</p>
                   <p className="mt-2 text-sm font-semibold text-evergreen">
-                    {new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date(session.starts_at))}
+                    <SessionTime startsAt={session.starts_at} />
                   </p>
                   {!session.join_url ? <p className="mt-2 text-xs font-bold uppercase tracking-wide text-accent-orange">Link coming this week</p> : null}
                 </div>
