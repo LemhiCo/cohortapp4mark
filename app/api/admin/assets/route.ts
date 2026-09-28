@@ -11,6 +11,7 @@ const attachmentSchema = z.object({
 }).nullable();
 
 const assetSchema = z.object({
+  actionItems: z.array(z.string().trim().min(1).max(300)).max(20).optional(),
   attachment: attachmentSchema,
   category: z.enum(["recording", "transcript", "documentation", "marketing_asset", "link"]),
   externalUrl: z.url().optional(),
@@ -19,9 +20,15 @@ const assetSchema = z.object({
   mimeType: z.string().trim().min(1).max(160).optional(),
   scope: z.enum(["program", "cohort", "msp"]),
   scopeId: z.uuid(),
+  // The database checks that the session belongs to the asset's cohort or MSP.
+  sessionId: z.uuid().optional(),
   sizeBytes: z.number().int().min(0).max(5368709120).optional(),
+  summary: z.string().trim().max(5000).optional(),
   title: z.string().trim().min(2).max(200),
 }).superRefine((value, context) => {
+  if (value.sessionId && value.scope === "program") {
+    context.addIssue({ code: "custom", message: "Session uploads are shared with a cohort or one MSP." });
+  }
   if (value.kind === "file" && (!value.fileName || !value.mimeType || value.sizeBytes === undefined)) {
     context.addIssue({ code: "custom", message: "File details are required." });
   }
@@ -67,6 +74,10 @@ export async function POST(request: Request) {
     status: input.kind === "link" ? "ready" : "pending",
     title: input.title,
   };
+
+  if (input.sessionId) insert.session_id = input.sessionId;
+  if (input.summary) insert.summary = input.summary;
+  if (input.actionItems?.length) insert.action_items = input.actionItems;
 
   if (input.scope === "program") insert.program_id = input.scopeId;
   if (input.scope === "cohort") insert.cohort_id = input.scopeId;

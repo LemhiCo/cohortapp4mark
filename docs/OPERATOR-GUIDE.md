@@ -42,7 +42,15 @@ Open the MSP from **MSP progress** or from the cohort’s **MSP portals** list.
 3. Optionally **Attach to** a week or task so it also appears in the checklist.
 4. **Upload to library**. Keep the tab open until it reaches 100% and shows “Asset added to the library.” Brief connection drops retry on their own. If it shows an error instead, upload the file again, then open the MSP page’s **Library** to confirm it opens.
 
-After a group session: upload the recording (Recording · One cohort · attach to that week), then the transcript (Transcript · One cohort). There is no summary field yet, so upload the summary and action items as a document (Documentation · One cohort).
+## After a session: upload the recording
+
+**Recordings** (or **Upload this session’s recording** under a session on the cohort page):
+
+1. **Group session**: pick the session. It goes to every MSP in that cohort and appears under that week in their checklist. **1:1 with an MSP**: pick the MSP and the call’s date and time; only that MSP sees it.
+2. Add the **Recording** and/or **Transcript**, then type the **Summary** and **Action items** (one per line).
+3. **Upload session package**. Keep the tab open until each file reaches 100%.
+
+MSPs open the recording to see the video with the summary and action items beside it, plus a link to the transcript from the same session.
 
 ## Fix, replace, or remove a file
 

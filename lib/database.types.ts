@@ -1163,6 +1163,14 @@ export type Database = {
         Args: { target_cohort_id: string }
         Returns: boolean
       }
+      create_one_on_one_session: {
+        Args: {
+          local_starts_at: string
+          target_msp_id: string
+          target_title: string
+        }
+        Returns: string
+      }
       current_cohort_id: { Args: never; Returns: string }
       current_msp_id: { Args: never; Returns: string }
       effective_cohort_status: {

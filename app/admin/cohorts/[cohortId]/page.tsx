@@ -107,16 +107,20 @@ export default async function CohortSetupPage({ params }: { params: Promise<{ co
         </div>
         <div className="mt-7 space-y-4">
           {sessions?.map((session) => (
-            <SessionEditor
-              cohortId={cohort.id}
-              joinUrl={session.join_url ?? ""}
-              localStartsAt={formatForLocalInput(session.starts_at, cohort.timezone)}
-              sessionId={session.id}
-              timezoneLabel={tzLabel}
-              title={session.title}
-              weekNumber={session.week_number ?? 0}
-              key={session.id}
-            />
+            <div key={session.id}>
+              <SessionEditor
+                cohortId={cohort.id}
+                joinUrl={session.join_url ?? ""}
+                localStartsAt={formatForLocalInput(session.starts_at, cohort.timezone)}
+                sessionId={session.id}
+                timezoneLabel={tzLabel}
+                title={session.title}
+                weekNumber={session.week_number ?? 0}
+              />
+              <Link className="mt-2 inline-flex text-sm font-semibold text-evergreen hover:underline" href={`/admin/recordings?session=${session.id}`}>
+                Upload this session’s recording →
+              </Link>
+            </div>
           ))}
         </div>
       </section>
