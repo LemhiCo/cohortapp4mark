@@ -101,7 +101,7 @@ export default async function CohortPage() {
                     <a className="mt-5 inline-flex min-h-11 items-center rounded-md border border-white/30 px-4 font-semibold hover:bg-white/10" href={nextSession.join_url} target="_blank" rel="noreferrer">
                       Join session ↗
                     </a>
-                  ) : <p className="mt-4 text-sm text-white/55">Join link coming soon</p>}
+                  ) : <p className="mt-4 text-sm text-white/55">Link coming this week</p>}
                 </>
               ) : <p className="mt-3 text-white/65">All scheduled sessions are complete.</p>}
             </div>
@@ -132,7 +132,9 @@ export default async function CohortPage() {
                     <span className="text-sm font-semibold text-muted">{sessionProgress?.week_percent ?? 0}% done</span>
                     {session.join_url ? (
                       <a className="rounded-md border border-line px-3 py-2 text-sm font-semibold text-evergreen hover:border-evergreen" href={session.join_url} target="_blank" rel="noreferrer">Join ↗</a>
-                    ) : null}
+                    ) : (
+                      <span className="text-sm font-semibold text-muted">Link coming this week</span>
+                    )}
                   </div>
                 </div>
               );

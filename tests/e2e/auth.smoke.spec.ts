@@ -1,5 +1,11 @@
 import { expect, test } from "@playwright/test";
 
+const passwordAccount = {
+  email: process.env.PLAYWRIGHT_MSP_EMAIL,
+  expectedMsp: process.env.PLAYWRIGHT_EXPECTED_MSP,
+  password: process.env.PLAYWRIGHT_MSP_PASSWORD,
+};
+
 test("a Lemhi email enters the shared demo portal without an email round trip", async ({ page }, testInfo) => {
   await page.goto("/sign-in");
   await expect(page.getByRole("heading", { name: "Sign in to your cohort" })).toBeVisible();
@@ -32,3 +38,22 @@ for (const path of ["/cohort", "/checklist", "/library", "/team", "/admin"]) {
     await expect(page).toHaveURL(/\/sign-in$/);
   });
 }
+
+test("a provisioned MSP password account opens only its own portal", async ({ page }) => {
+  test.skip(
+    !passwordAccount.email || !passwordAccount.password || !passwordAccount.expectedMsp,
+    "Set PLAYWRIGHT_MSP_EMAIL, PLAYWRIGHT_MSP_PASSWORD, and PLAYWRIGHT_EXPECTED_MSP to run this production smoke test.",
+  );
+
+  await page.goto("/sign-in");
+  await page.getByLabel("Work email").fill(passwordAccount.email!);
+  await page.getByLabel(/^Password/).fill(passwordAccount.password!);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+
+  await expect(page).toHaveURL(/\/cohort$/);
+  await expect(page.getByText(passwordAccount.expectedMsp!, { exact: true }).first()).toBeVisible();
+
+  await page.goto("/admin");
+  await expect(page).toHaveURL(/\/cohort$/);
+  await expect(page.getByText(passwordAccount.expectedMsp!, { exact: true }).first()).toBeVisible();
+});

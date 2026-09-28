@@ -115,3 +115,9 @@ where id in (
   '22000000-0000-4000-8000-000000000008',
   '22000000-0000-4000-8000-000000000009'
 );
+
+-- A missing meeting URL is intentional until Mark adds the real Teams link.
+-- Never restore the demo Google Meet placeholder during a local reset.
+update public.sessions
+set join_url = null
+where join_url = 'https://meet.google.com';

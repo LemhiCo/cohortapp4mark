@@ -78,7 +78,7 @@ Temporary passwords are intentionally **not stored in Git, this document, source
 - [ ] Cohort start date is `2026-09-14`; confirm the real cohort date.
 - [ ] Time zone is `America/New_York`; confirm it with Mark.
 - [ ] Weekly session time is Monday at 11:00 AM Eastern; confirm it with Mark.
-- [ ] All four session URLs currently point to the placeholder `https://meet.google.com`.
+- [x] All four fake `https://meet.google.com` URLs were cleared; session URLs are now `NULL` until Mark adds Teams links.
 - [ ] MSP websites are all `https://example.com`.
 - [ ] MSP logos are not uploaded.
 - [ ] The assigned lead is the demo admin identity, not Mark’s real profile.
@@ -90,8 +90,8 @@ Temporary passwords are intentionally **not stored in Git, this document, source
 - [ ] Mark’s real admin account.
 - [ ] Production demo mode disabled.
 - [ ] Launch-ready cohort name, dates, schedule, websites, logos, and lead profile.
-- [ ] The exact “Link coming this week” empty-session treatment.
-- [ ] Production browser smoke test using all four MSP logins.
+- [x] The exact “Link coming this week” empty-session treatment is implemented in both session locations.
+- [x] Production browser smoke test passed for all four MSP logins on desktop and mobile.
 - [ ] Full local RLS suite rerun; Docker Desktop was stopped during the last attempt.
 - [ ] Custom domain such as `cohorts.lemhi.ai`.
 - [ ] Custom SMTP and real invitation delivery. This is not required for the temporary manual-password launch.
@@ -257,7 +257,7 @@ An `@lemhi.com` address alone must never grant admin access. Admin access requir
 | Team management | Implemented, email-dependent | Defer team invites or provision additional users manually |
 | Mark admin access | Demo admin only | Create real allow-listed password account |
 | Create cohort/MSP | Implemented | Smoke-test once with disposable preview data |
-| Edit sessions | Implemented | Add real schedule and “Link coming this week” behavior |
+| Edit sessions | Implemented | “Link coming this week” is complete; add the real schedule |
 | Per-MSP admin view | Implemented | Confirm Mark’s preferred summary/order |
 | Scoped asset upload | Implemented | Test program, cohort, and MSP scope in production |
 | Same-day session package | Partially implemented | Generic uploads work; guided recording/transcript/summary flow remains |
@@ -288,8 +288,8 @@ An `@lemhi.com` address alone must never grant admin access. Admin access requir
 - [ ] Confirm start date, time zone, weekly weekday, and weekly start time.
 - [ ] Confirm the four session titles and dates.
 - [ ] Update cohort data and regenerate/correct sessions without changing the MSP IDs.
-- [ ] Replace every placeholder `https://meet.google.com` URL with `NULL` until the real URL exists.
-- [ ] Change both empty-link UI locations to **“Link coming this week”**.
+- [x] Replace every placeholder `https://meet.google.com` URL with `NULL` until the real URL exists.
+- [x] Change both empty-link UI locations to **“Link coming this week”**.
 - [ ] Confirm the current-week calculation against the real start date.
 - [ ] Remove `status_override = active` unless Mark explicitly needs the override.
 - [ ] Confirm the final 30-task roadmap text. Resolve the PRD’s 27-versus-30 source inconsistency.
@@ -343,12 +343,12 @@ An `@lemhi.com` address alone must never grant admin access. Admin access requir
 - [ ] Run `npm run supabase:start`.
 - [ ] Run `npm run supabase:reset`.
 - [ ] Run `npm run test:db` and require all 31 pgTAP assertions to pass.
-- [ ] Run `npm run lint`.
-- [ ] Run `npm run typecheck`.
-- [ ] Run `npm run build`.
-- [ ] Add password-account browser smoke tests without committing credentials.
-- [ ] Run production smoke tests using environment-provided test credentials.
-- [ ] Confirm each MSP’s heading/name and denial from `/admin`.
+- [x] Run `npm run lint`.
+- [x] Run `npm run typecheck`.
+- [x] Run `npm run build`.
+- [x] Add password-account browser smoke tests without committing credentials.
+- [x] Run production smoke tests using environment-provided test credentials.
+- [x] Confirm each MSP’s heading/name and denial from `/admin`.
 - [ ] Confirm signed-out visitors are redirected to `/sign-in`.
 - [ ] Confirm asset signed URLs expire and foreign storage paths are denied.
 
@@ -547,4 +547,3 @@ Real Mark admin
   → run RLS and browser tests
   → distribute credentials separately
 ```
-
