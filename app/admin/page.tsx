@@ -17,16 +17,6 @@ function nextMonday() {
   return date.toISOString().slice(0, 10);
 }
 
-function effectiveStatus(startDate: string, override: Enums<"cohort_status"> | null): Enums<"cohort_status"> {
-  if (override) return override;
-  const today = new Date().toISOString().slice(0, 10);
-  const endDate = new Date(`${startDate}T00:00:00Z`);
-  endDate.setUTCDate(endDate.getUTCDate() + 28);
-  if (today < startDate) return "upcoming";
-  if (today >= endDate.toISOString().slice(0, 10)) return "ended";
-  return "active";
-}
-
 const statusStyles: Record<Enums<"cohort_status">, string> = {
   active: "bg-sage text-dark-evergreen",
   ended: "bg-[#EAE5DC] text-muted",
@@ -78,6 +68,12 @@ export default async function AdminPage() {
       .limit(5),
   ]);
 
+  // Status follows each cohort's own time zone, so ask the database rather than
+  // recomputing it here in the server's UTC.
+  const cohortStatuses = new Map(await Promise.all((cohorts ?? []).map(async (cohort) => {
+    const { data } = await supabase.rpc("effective_cohort_status", { target_cohort_id: cohort.id });
+    return [cohort.id, data ?? "upcoming"] as const;
+  })));
   const adminNames = new Map((admins ?? []).map((admin) => [admin.id, admin.full_name || admin.email]));
   const cohortNames = new Map((cohorts ?? []).map((cohort) => [cohort.id, cohort.name]));
   const mspCounts = new Map<string, number>();
@@ -196,7 +192,7 @@ export default async function AdminPage() {
           <div className="mt-6 space-y-3">
             {cohorts?.length ? (
               cohorts.map((cohort) => {
-                const status = effectiveStatus(cohort.start_date, cohort.status_override);
+                const status = cohortStatuses.get(cohort.id) ?? "upcoming";
                 return (
                   <Link
                     className="group block rounded-lg border border-line bg-white/70 p-5 transition hover:-translate-y-0.5 hover:border-evergreen hover:shadow-[0_14px_30px_rgba(18,19,15,0.07)]"
