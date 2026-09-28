@@ -99,3 +99,19 @@ on conflict (id) do update set
 -- Populate the reversible fake-data walkthrough after the program template exists.
 select public.seed_demo_content();
 select public.seed_demo_progress();
+
+-- The supplied starter library replaces the example.com asset placeholders.
+-- Keep local resets aligned with production while retaining the demo cohort,
+-- progress, notes, and identities.
+delete from public.assets
+where id in (
+  '22000000-0000-4000-8000-000000000001',
+  '22000000-0000-4000-8000-000000000002',
+  '22000000-0000-4000-8000-000000000003',
+  '22000000-0000-4000-8000-000000000004',
+  '22000000-0000-4000-8000-000000000005',
+  '22000000-0000-4000-8000-000000000006',
+  '22000000-0000-4000-8000-000000000007',
+  '22000000-0000-4000-8000-000000000008',
+  '22000000-0000-4000-8000-000000000009'
+);
