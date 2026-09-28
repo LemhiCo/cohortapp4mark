@@ -36,7 +36,7 @@ Before sending the portal link to an MSP:
 - [x] Remove demo access from the code and redeploy production.
 - [x] Confirm that leaving the password blank no longer opens the demo.
 - [x] Apply the launch migration in production and run its verification query.
-- [ ] Confirm that each MSP password opens only the intended MSP portal.
+- [x] Confirm that each MSP password opens only the intended MSP portal. Production, 2026-09-27 (Felipe): all four sign in; all four are redirected away from `/admin`.
 
 ## 3. Current production state
 
@@ -94,7 +94,7 @@ Items marked *(migration)* were fixed by `20260928000000_launch_cohort_from_scra
 - [x] Password-free demo walkthrough removed from the application code and the sign-up trigger.
 - [ ] Launch-ready cohort name, dates, schedule, websites, logos, and lead profile. *(migration covers name, dates, lead; websites and logos are for Mark)*
 - [x] The exact “Link coming this week” empty-session treatment is implemented in both session locations.
-- [x] Production browser smoke test passed for all four MSP logins on desktop and mobile (before demo removal; recheck after the migration).
+- [x] Production browser smoke test passed for all four MSP logins on desktop and mobile, and was rechecked by Felipe after the launch migration.
 - [x] Full local RLS suite rerun: 31/31 on 2026-09-27 with the launch migration applied.
 - [ ] Custom domain such as `cohorts.lemhi.ai`.
 - [ ] Custom SMTP and real invitation delivery. This is not required for the temporary manual-password launch.
@@ -106,6 +106,14 @@ Items marked *(migration)* were fixed by `20260928000000_launch_cohort_from_scra
 - [ ] Admin UI for editing/deleting existing assets.
 - [x] Admin UI for editing MSP name/website and deactivating/reactivating portal access.
 - [ ] Admin UI for resetting MSP credentials.
+
+### Awaiting review
+
+These change production behavior, so they are open as pull requests and not merged. Merging to `main` deploys to production.
+
+| PR | What it does | Production step after merge |
+|---|---|---|
+| [#1](https://github.com/LemhiCo/cohortapp4mark/pull/1) | Failed-upload retries no longer create empty library entries | Upload one small file and open it from an MSP account |
 
 ## 4. MVP scope and definition of done
 
@@ -280,14 +288,14 @@ An `@lemhi.com` address alone must never grant admin access. Admin access requir
 - [x] Create and auto-confirm Mark’s Supabase Auth user with a strong temporary password.
 - [x] Verify the trigger creates an active `lemhi_admin` profile with `msp_id = null`.
 - [x] Sign in as Mark and verify `/admin`. Production, 2026-09-27 (Felipe): lands on `/admin`, and “What needs attention” lists all four MSPs.
-- [ ] As Mark, open each MSP page and the admin library.
+- [x] As Mark, open each MSP page and the admin library. Production, 2026-09-27 (Felipe): all four MSP pages open, each showing 19 visible assets, and the admin library opens.
 - [x] Disable demo sign-in and the demo-role toggle unconditionally in production code.
 - [x] Redeploy and verify password-free demo entry and the demo-role toggle are unavailable. Verified on production 2026-09-27: `582d2a1` deployed; a blank password shows the magic-link message and creates no session. Demo code removed in `e16dc4e`.
 - [x] Apply the launch migration so the leftover demo identities and their sessions are deleted. Production: 0 demo users remain.
-- [ ] Verify all four MSP passwords still work after demo mode is disabled. *(Needs the MSP passwords.)*
-- [ ] Verify all four MSP accounts are redirected away from `/admin`. *(Needs the MSP passwords. Passed locally with a test MSP owner on desktop and mobile.)*
+- [x] Verify all four MSP passwords still work after demo mode is disabled. Production, 2026-09-27 (Felipe), after the launch migration.
+- [x] Verify all four MSP accounts are redirected away from `/admin`. Production, 2026-09-27 (Felipe).
 
-**Acceptance:** Mark reaches `/admin`; each MSP reaches only `/cohort`; no unauthenticated or password-free visitor can obtain demo-admin access.
+**Acceptance:** Mark reaches `/admin`; each MSP reaches only `/cohort`; no unauthenticated or password-free visitor can obtain demo-admin access. **Met on 2026-09-27.**
 
 ### Phase 1 — Convert the demo cohort into the launch cohort — RELEASE BLOCKER
 
@@ -370,7 +378,7 @@ Expected: `Sep 28 11:00 AM | Oct 05 11:00 AM | Oct 12 11:00 AM | Oct 19 11:00 AM
 - [ ] Mark uploads one MSP-scoped document and only that MSP sees it.
 - [ ] Mark uploads one representative video and confirms browser playback.
 - [x] Write a one-page Mark operator guide with: sign in, update a session link, check progress, add a note, upload a file, and replace a recording. See [`docs/OPERATOR-GUIDE.md`](./OPERATOR-GUIDE.md). Replacing a recording currently needs Felipe, because the admin cannot delete or edit a file yet.
-- [ ] Fix upload retries. After a failed upload, uploading the same file again resumes the old attempt into the old storage path, and the new library entry is marked ready with no file behind it.
+- [ ] Fix upload retries. After a failed upload, uploading the same file again resumes the old attempt into the old storage path, and the new library entry is marked ready with no file behind it. Fixed in [PR #1](https://github.com/LemhiCo/cohortapp4mark/pull/1), awaiting review.
 
 **Acceptance:** Mark can run the cohort’s normal weekly work without a developer or direct database access.
 
@@ -615,4 +623,5 @@ Real Mark admin
 | 2026-09-27 | Claude | Production | Every recent production deployment is a commit on `main` | Pass: last 12 deployments |
 | 2026-09-27 | Claude | Local production build | `tests/e2e/file-access.spec.ts`: own file opens, foreign file denied, signed URL expires, route 404s foreign file | Pass: 4/4 |
 | — | Felipe | Production | Follow-up check: session dates, accounts by role, trigger | Pending |
-| — | Felipe | Production | One MSP signs in and is redirected away from `/admin` | Pending |
+| 2026-09-27 | Felipe | Production | All four MSP passwords sign in and are redirected away from `/admin` | Pass |
+| 2026-09-27 | Felipe | Production | As Mark: open all four MSP pages and the admin library | Pass: each MSP page shows 19 visible assets |
