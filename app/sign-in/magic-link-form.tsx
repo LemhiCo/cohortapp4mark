@@ -6,7 +6,7 @@ import { requestMagicLink, type MagicLinkState } from "./actions";
 
 const initialState: MagicLinkState = { status: "idle", message: "" };
 
-export function MagicLinkForm({ demoMode }: { demoMode: boolean }) {
+export function MagicLinkForm() {
   const [state, formAction, pending] = useActionState(requestMagicLink, initialState);
   const [hasPassword, setHasPassword] = useState(false);
 
@@ -50,14 +50,10 @@ export function MagicLinkForm({ demoMode }: { demoMode: boolean }) {
         {pending
           ? hasPassword
             ? "Signing in…"
-            : demoMode
-              ? "Opening demo portal…"
-              : "Sending secure link…"
+            : "Sending secure link…"
           : hasPassword
             ? "Sign in"
-            : demoMode
-              ? "Enter the demo portal"
-              : "Email me a sign-in link"}
+            : "Email me a sign-in link"}
       </button>
 
       {state.message ? (

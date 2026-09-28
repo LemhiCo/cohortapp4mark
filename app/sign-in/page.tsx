@@ -8,7 +8,6 @@ type SignInPageProps = {
 
 export default async function SignInPage({ searchParams }: SignInPageProps) {
   const { error } = await searchParams;
-  const demoMode = process.env.NODE_ENV !== "production" && process.env.DEMO_LOGIN_ENABLED === "true";
 
   return (
     <main className="grid min-h-screen bg-background lg:grid-cols-[1.05fr_0.95fr]">
@@ -50,9 +49,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
             Sign in to your cohort
           </h2>
           <p className="mt-4 text-base leading-7 text-muted">
-            {demoMode
-              ? "MSP partners can sign in with the email and temporary password supplied by Lemhi. For the internal preview, Lemhi team members can leave the password blank."
-              : "Sign in with your Lemhi portal password, or leave the password blank to receive a secure email link."}
+            Sign in with your Lemhi portal password, or leave the password blank to receive a secure email link.
           </p>
 
           {error ? (
@@ -63,13 +60,11 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
             </p>
           ) : null}
 
-          <MagicLinkForm demoMode={demoMode} />
+          <MagicLinkForm />
 
           <div className="mt-8 border-t border-line pt-6">
             <p className="text-sm leading-6 text-muted">
-              {demoMode
-                ? "Password access opens your assigned MSP portal. Password-free demo access opens the shared sample workspace."
-                : "Email links expire for your protection. If a link expires, return here to request another."}
+              Email links expire for your protection. If a link expires, return here to request another.
             </p>
           </div>
         </div>

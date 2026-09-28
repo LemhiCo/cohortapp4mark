@@ -9,34 +9,16 @@ const adminAccount = {
   email: process.env.PLAYWRIGHT_ADMIN_EMAIL,
   password: process.env.PLAYWRIGHT_ADMIN_PASSWORD,
 };
-const demoEnabled = process.env.PLAYWRIGHT_DEMO_ENABLED !== "false";
-
-test("a Lemhi email enters the shared demo portal without an email round trip", async ({ page }, testInfo) => {
-  test.skip(!demoEnabled, "Demo access is disabled in production.");
+test("a Lemhi email with a blank password never opens a portal", async ({ page }, testInfo) => {
   await page.goto("/sign-in");
   await expect(page.getByRole("heading", { name: "Sign in to your cohort" })).toBeVisible();
   const projectSlug = testInfo.project.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
-  await page.getByLabel("Work email").fill(`portal-smoke-${projectSlug}@lemhi.com`);
-  await page.getByRole("button", { name: "Enter the demo portal" }).click();
-  await expect(page).toHaveURL(/\/cohort$/);
-  await expect(page.getByRole("heading", { name: "Fall 2026 Demo Cohort" })).toBeVisible();
-});
+  await page.getByLabel("Work email").fill(`no-password-${projectSlug}@lemhi.com`);
+  await page.getByRole("button", { name: "Email me a sign-in link" }).click();
+  await expect(page.getByRole("status")).toContainText("If your invitation is active");
 
-test("the demo view toggle switches between the client and admin portals", async ({ page }, testInfo) => {
-  test.skip(!demoEnabled, "Demo access is disabled in production.");
-  await page.goto("/sign-in");
-  const projectSlug = testInfo.project.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
-  await page.getByLabel("Work email").fill(`toggle-smoke-${projectSlug}@lemhi.com`);
-  await page.getByRole("button", { name: "Enter the demo portal" }).click();
-  await expect(page).toHaveURL(/\/cohort$/);
-
-  await page.getByRole("button", { name: "Demo: switch to admin view" }).click();
-  await expect(page).toHaveURL(/\/admin$/);
-  await expect(page.getByRole("heading", { name: "Cohort setup" })).toBeVisible();
-
-  await page.getByRole("button", { name: "Demo: switch to client view" }).click();
-  await expect(page).toHaveURL(/\/cohort$/);
-  await expect(page.getByRole("heading", { name: "Fall 2026 Demo Cohort" })).toBeVisible();
+  await page.goto("/admin");
+  await expect(page).toHaveURL(/\/sign-in$/);
 });
 
 for (const path of ["/cohort", "/checklist", "/library", "/team", "/admin"]) {
