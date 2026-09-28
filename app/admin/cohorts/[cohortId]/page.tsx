@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { AppShell } from "@/components/app-shell";
+import { CohortLeadForm } from "@/components/cohort-lead-form";
 import { InviteOwnerForm } from "@/components/invite-owner-form";
 import { MspPortalForm } from "@/components/msp-portal-form";
 import { LogoUploadForm } from "@/components/logo-upload-form";
@@ -47,7 +48,7 @@ export default async function CohortSetupPage({ params }: { params: Promise<{ co
 
   if (!cohort) notFound();
 
-  const [{ data: sessions }, { data: msps }, { data: invitations }, { data: owners }, { count: taskCount }] = await Promise.all([
+  const [{ data: sessions }, { data: msps }, { data: invitations }, { data: owners }, { count: taskCount }, { data: admins }] = await Promise.all([
     supabase
       .from("sessions")
       .select("id, title, starts_at, join_url, week_number")
@@ -72,7 +73,17 @@ export default async function CohortSetupPage({ params }: { params: Promise<{ co
       .from("cohort_tasks")
       .select("id", { count: "exact", head: true })
       .eq("cohort_id", cohort.id),
+    supabase
+      .from("profiles")
+      .select("id, full_name, email, title")
+      .eq("role", "lemhi_admin")
+      .eq("active", true)
+      .order("full_name"),
   ]);
+  const leadOptions = (admins ?? []).map((admin) => ({
+    id: admin.id,
+    label: `${admin.full_name || admin.email}${admin.title ? ` · ${admin.title}` : ""}`,
+  }));
 
   const cohortMspIds = new Set((msps ?? []).map((msp) => msp.id));
   const latestInvitation = new Map<string, NonNullable<typeof invitations>[number]>();
@@ -96,6 +107,16 @@ export default async function CohortSetupPage({ params }: { params: Promise<{ co
         <span className="text-line">·</span>
         <span className="text-muted">{taskCount ?? 0} checklist items</span>
       </div>
+
+      <section className="mb-8 rounded-xl border border-line bg-paper p-6 sm:p-8">
+        <p className="text-sm font-bold uppercase tracking-[0.16em] text-accent-orange">Lemhi lead</p>
+        <p className="mt-2 max-w-3xl text-base leading-7 text-muted">
+          MSPs see this person on their Cohort page as their Lemhi contact. Any active Lemhi admin can lead a cohort.
+        </p>
+        <div className="mt-5">
+          <CohortLeadForm cohortId={cohort.id} leadId={cohort.lead_id} leads={leadOptions} />
+        </div>
+      </section>
 
       <section className="rounded-xl border border-line bg-paper p-6 shadow-[0_18px_50px_rgba(18,19,15,0.06)] sm:p-8">
         <div className="max-w-3xl">

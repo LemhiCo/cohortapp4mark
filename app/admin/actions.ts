@@ -60,6 +60,11 @@ const updateSessionSchema = z.object({
   title: z.string().trim().min(2).max(160),
 });
 
+const updateCohortLeadSchema = z.object({
+  cohortId: z.uuid(),
+  leadId: z.uuid(),
+});
+
 const inviteOwnerSchema = z.object({
   email: z.email().transform((value) => value.trim().toLowerCase()),
   fullName: z.string().trim().min(2).max(120),
@@ -247,6 +252,46 @@ export async function updateGroupSession(
 
   revalidatePath(`/admin/cohorts/${parsed.data.cohortId}`);
   return { status: "success", message: "Session updated." };
+}
+
+export async function updateCohortLead(
+  _previousState: AdminActionState,
+  formData: FormData,
+): Promise<AdminActionState> {
+  await requireAdminProfile();
+  const parsed = updateCohortLeadSchema.safeParse({
+    cohortId: formData.get("cohortId"),
+    leadId: formData.get("leadId"),
+  });
+
+  if (!parsed.success) return { status: "error", message: "Choose a Lemhi lead." };
+
+  const supabase = await createServerSupabaseClient();
+  const { data: lead } = await supabase
+    .from("profiles")
+    .select("full_name, email")
+    .eq("id", parsed.data.leadId)
+    .eq("role", "lemhi_admin")
+    .eq("active", true)
+    .maybeSingle();
+
+  if (!lead) return { status: "error", message: "Choose an active Lemhi lead." };
+
+  const { data: cohort, error } = await supabase
+    .from("cohorts")
+    .update({ lead_id: parsed.data.leadId })
+    .eq("id", parsed.data.cohortId)
+    .select("id")
+    .maybeSingle();
+
+  if (error || !cohort) {
+    console.error("Cohort lead update failed", error);
+    return { status: "error", message: "The cohort lead could not be updated." };
+  }
+
+  revalidatePath(`/admin/cohorts/${parsed.data.cohortId}`);
+  revalidatePath("/admin");
+  return { status: "success", message: `${lead.full_name || lead.email} now leads this cohort. MSPs see them on their Cohort page.` };
 }
 
 export async function inviteMspOwner(
