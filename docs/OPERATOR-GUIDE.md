@@ -64,6 +64,17 @@ Every item in **Library** → **Assets** has **Open**, **Edit**, and **Delete**:
 
 To replace a recording, upload the new file first, check it with **Open**, then delete the old one. Who can see a file can’t be changed after upload; to share it more widely or narrowly, upload it again with the right **Who can see it** and delete the original.
 
+## Edit the four-week program
+
+**Program** shows every week and task. Changes reach every upcoming and active cohort immediately; ended cohorts keep their checklist as it was.
+
+- **Edit week title, subtitle and goal**, then **Save week**.
+- **Edit task** changes its title, description, owner, who checks it off, and whether it’s a checkpoint.
+- **Add a task to Week N** adds it at the end of that week for every running cohort.
+- **Archive** takes a task off every running checklist and out of progress, keeping past completions. **Restore task** under **Archived tasks** brings it back.
+
+Tasks can’t be reordered or moved to another week yet; ask Felipe.
+
 ## MSP details and logos
 
 - On the MSP page, **Settings** changes **Company name**, **Website**, and **Access** (Active or Deactivated). **Save settings**. Deactivating removes portal access for everyone at that MSP until you set it back to Active.
@@ -72,4 +83,5 @@ To replace a recording, upload the new file first, check it with **Open**, then 
 ## Ask Felipe for
 
 - New MSP logins, password resets, and extra teammates.
-- Changing a cohort’s name or start date, or the wording of the 30 tasks.
+- Changing a cohort’s name or start date.
+- Reordering tasks or moving one to another week.
