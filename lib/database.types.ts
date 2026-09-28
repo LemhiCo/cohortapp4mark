@@ -210,6 +210,13 @@ export type Database = {
             foreignKeyName: "assets_cohort_task_id_fkey"
             columns: ["cohort_task_id"]
             isOneToOne: false
+            referencedRelation: "cohort_stuck_tasks"
+            referencedColumns: ["cohort_task_id"]
+          },
+          {
+            foreignKeyName: "assets_cohort_task_id_fkey"
+            columns: ["cohort_task_id"]
+            isOneToOne: false
             referencedRelation: "cohort_tasks"
             referencedColumns: ["id"]
           },
@@ -610,6 +617,13 @@ export type Database = {
             foreignKeyName: "msp_hidden_tasks_cohort_task_id_fkey"
             columns: ["cohort_task_id"]
             isOneToOne: false
+            referencedRelation: "cohort_stuck_tasks"
+            referencedColumns: ["cohort_task_id"]
+          },
+          {
+            foreignKeyName: "msp_hidden_tasks_cohort_task_id_fkey"
+            columns: ["cohort_task_id"]
+            isOneToOne: false
             referencedRelation: "cohort_tasks"
             referencedColumns: ["id"]
           },
@@ -986,6 +1000,13 @@ export type Database = {
             foreignKeyName: "task_completions_cohort_task_id_fkey"
             columns: ["cohort_task_id"]
             isOneToOne: false
+            referencedRelation: "cohort_stuck_tasks"
+            referencedColumns: ["cohort_task_id"]
+          },
+          {
+            foreignKeyName: "task_completions_cohort_task_id_fkey"
+            columns: ["cohort_task_id"]
+            isOneToOne: false
             referencedRelation: "cohort_tasks"
             referencedColumns: ["id"]
           },
@@ -1070,6 +1091,13 @@ export type Database = {
             foreignKeyName: "task_notes_cohort_task_id_fkey"
             columns: ["cohort_task_id"]
             isOneToOne: false
+            referencedRelation: "cohort_stuck_tasks"
+            referencedColumns: ["cohort_task_id"]
+          },
+          {
+            foreignKeyName: "task_notes_cohort_task_id_fkey"
+            columns: ["cohort_task_id"]
+            isOneToOne: false
             referencedRelation: "cohort_tasks"
             referencedColumns: ["id"]
           },
@@ -1117,6 +1145,34 @@ export type Database = {
           website: string | null
         }
         Relationships: []
+      }
+      cohort_stuck_tasks: {
+        Row: {
+          cohort_id: string | null
+          cohort_task_id: string | null
+          eligible_msps: number | null
+          kind: Database["public"]["Enums"]["task_kind"] | null
+          open_msps: number | null
+          owner_type: Database["public"]["Enums"]["owner_type"] | null
+          title: string | null
+          week_number: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cohort_tasks_cohort_id_fkey"
+            columns: ["cohort_id"]
+            isOneToOne: false
+            referencedRelation: "cohort_leads"
+            referencedColumns: ["cohort_id"]
+          },
+          {
+            foreignKeyName: "cohort_tasks_cohort_id_fkey"
+            columns: ["cohort_id"]
+            isOneToOne: false
+            referencedRelation: "cohorts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       msp_progress: {
         Row: {
