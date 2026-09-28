@@ -5,8 +5,8 @@
 **Source repository:** <https://github.com/LemhiCo/cohortapp4mark>  
 **Product requirements:** [`docs/PRD.md`](./PRD.md)  
 **Current application commit:** `3aa2990`  
-**Latest production database change:** `20260928000000_launch_cohort_from_scratch.sql`, applied and verified 2026-09-27  
-**Awaiting merge:** branch `mvp-autonomous`, 8 commits plus this doc update. Apply its three migrations in production first; see [Awaiting review](#awaiting-review).
+**Latest production database change:** `20260928030000_cohort_stuck_tasks.sql`, applied with `20260928010000` and `20260928020000` and verified 2026-09-28  
+**Awaiting merge:** branch `mvp-autonomous`. Its three migrations are applied in production, so it is ready to merge; see [Awaiting review](#awaiting-review).
 
 ## 1. Purpose of this document
 
@@ -115,7 +115,7 @@ These change production behavior, so they are not merged. Merging to `main` depl
 
 | Change | What it does | Status |
 |---|---|---|
-| Branch `mvp-autonomous` | Items 1–9 below | Ready to merge once its three migrations are applied in production |
+| Branch `mvp-autonomous` | Items 1–9 below | Ready to merge: its three migrations were applied and verified in production on 2026-09-28 |
 | [PR #1](https://github.com/LemhiCo/cohortapp4mark/pull/1) | Failed-upload retries no longer create empty library entries | Superseded by item 2 on the branch. Close it without merging. |
 
 #### Branch `mvp-autonomous`
@@ -134,7 +134,7 @@ One commit per item. For every item, the full check passed locally: fresh `supab
 | 8 | **View as MSP**: a read-only preview of one MSP’s Cohort, Checklist, and Library pages, built from the same components the MSP sees. | `9742a86` | `view-as-msp.spec.ts` | — |
 | 9 | **Program** editor: edit weeks and tasks, add a task, archive and restore. Changes reach upcoming and active cohorts; ended cohorts keep theirs. | `82675de` | `program_editor.test.sql`, `program-editor.spec.ts` | — |
 
-**Migrations to apply in production before merging, in this order.** In the production SQL editor, paste and run each file on its own:
+**Migrations to apply in production before merging, in this order.** Applied by Felipe on 2026-09-28: each ran successfully, and the check below returned `Cohort 1, active, 1, 1, 0`. In the production SQL editor, paste and run each file on its own:
 
 1. `supabase/migrations/20260928010000_cohort_local_time.sql`
 2. `supabase/migrations/20260928020000_one_on_one_sessions.sql`
@@ -327,8 +327,8 @@ An `@lemhi.com` address alone must never grant admin access. Admin access requir
 | Edit sessions | Implemented | “Link coming this week” is complete; add the real schedule |
 | Per-MSP admin view | Implemented, including portal settings | Confirm Mark’s preferred summary/order |
 | Scoped asset upload | Implemented | Test program, cohort, and MSP scope in production |
-| Same-day session package | Built on `mvp-autonomous` | Apply migration 2, merge, and upload the first real recording through **Recordings** |
-| Global admin dashboard | Stuck-task ranking and per-cohort cards built on `mvp-autonomous` | Apply migration 3 and merge |
+| Same-day session package | Built on `mvp-autonomous`; its migration is applied | Merge, then upload the first real recording through **Recordings** |
+| Global admin dashboard | Stuck-task ranking and per-cohort cards built on `mvp-autonomous`; its migration is applied | Merge |
 | Per-MSP task customization | Built on `mvp-autonomous` | Merge |
 | Program editor | Built on `mvp-autonomous`; no reordering or moving between weeks | Merge; reorder or move tasks with SQL until then |
 | View as MSP | Built on `mvp-autonomous` | Merge |
@@ -361,7 +361,7 @@ An `@lemhi.com` address alone must never grant admin access. Admin access requir
 - [ ] Update cohort data and regenerate/correct sessions without changing the MSP IDs. Cohort data verified in production; the session dates are still to be checked.
 - [x] Replace every placeholder `https://meet.google.com` URL with `NULL` until the real URL exists.
 - [x] Change both empty-link UI locations to **“Link coming this week”**.
-- [ ] Confirm the current-week calculation against the real start date. In the rehearsal, Week 1 begins 2026-09-28. Known issue: `cohort_current_week()` uses the database date in UTC, so the week turns over at 8 PM Eastern the evening before. Fixed on `mvp-autonomous` (`3e712c1`, migration `20260928010000`); live once that migration is applied.
+- [x] Confirm the current-week calculation against the real start date. The week used to turn over at 8 PM Eastern the evening before, because `cohort_current_week()` used the database date in UTC. Migration `20260928010000` fixed this (`3e712c1`). Production, 2026-09-28 (Felipe): after the migration, Cohort 1 is `active` in Week 1.
 - [x] Remove `status_override = active`. Production: now `NULL`.
 - [ ] Confirm the final 30-task roadmap text. Resolve the PRD’s 27-versus-30 source inconsistency.
 - [x] Clear demo completions and notes, in place, no new cohort. Production: 0 completions, 0 notes.
@@ -689,5 +689,5 @@ Real Mark admin
 | 2026-09-27 | Felipe | Production | All four MSP passwords sign in and are redirected away from `/admin` | Pass |
 | 2026-09-27 | Felipe | Production | As Mark: open all four MSP pages and the admin library | Pass: each MSP page shows 19 visible assets |
 | 2026-09-28 | Claude | Local production build | `mvp-autonomous` items 1–9: reset, `test:db`, lint, typecheck, build, and e2e after each item | Pass after every item; final state `test:db` 75/75, Playwright 32/32 |
-| — | Felipe | Production | Apply migrations `20260928010000`, `20260928020000`, `20260928030000` and run the check in §3 | Pending |
+| 2026-09-28 | Felipe | Production | Apply migrations `20260928010000`, `20260928020000`, `20260928030000` and run the check in §3 | Pass: all three succeeded; check returned `Cohort 1, active, 1, 1, 0` |
 | — | Felipe or Mark | Production | Post-merge checks for `mvp-autonomous` in §3 | Pending |
