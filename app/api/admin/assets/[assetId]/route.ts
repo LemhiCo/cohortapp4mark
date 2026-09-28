@@ -23,6 +23,25 @@ export async function PATCH(
   }
 
   const supabase = await createServerSupabaseClient();
+
+  if (parsedBody.data.status === "ready") {
+    const { data: asset } = await supabase
+      .from("assets")
+      .select("storage_path")
+      .eq("id", parsedParams.data.assetId)
+      .eq("kind", "file")
+      .maybeSingle();
+
+    const { data: uploaded } = asset?.storage_path
+      ? await supabase.storage.from("portal-assets").exists(asset.storage_path)
+      : { data: false };
+
+    if (!uploaded) {
+      await supabase.from("assets").update({ status: "failed" }).eq("id", parsedParams.data.assetId);
+      return NextResponse.json({ error: "The file did not finish uploading. Upload it again." }, { status: 409 });
+    }
+  }
+
   const { error } = await supabase
     .from("assets")
     .update({ status: parsedBody.data.status })

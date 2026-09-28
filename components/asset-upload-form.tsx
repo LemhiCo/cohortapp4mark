@@ -53,8 +53,12 @@ function uploadResumable(file: File, path: string, accessToken: string, onProgre
       uploadDataDuringCreation: true,
     });
 
+    // Each submit creates a new asset with its own path, so an earlier attempt
+    // of the same file targets a different object. Resuming it would finish
+    // the old object and leave this asset "ready" with no file behind it.
     void upload.findPreviousUploads().then((previousUploads) => {
-      if (previousUploads.length) upload.resumeFromPreviousUpload(previousUploads[0]);
+      const samePath = previousUploads.find((previous) => previous.metadata.objectName === path);
+      if (samePath) upload.resumeFromPreviousUpload(samePath);
       upload.start();
     }).catch(reject);
   });
@@ -123,11 +127,15 @@ export function AssetUploadForm({ attachments, cohorts, msps, programs }: AssetU
           const { data: { session } } = await supabase.auth.getSession();
           if (!session?.access_token) throw new Error("Your session expired. Sign in and try again.");
           await uploadResumable(file, result.path, session.access_token, setUploadPercent);
-          await fetch(`/api/admin/assets/${result.assetId}`, {
+          const ready = await fetch(`/api/admin/assets/${result.assetId}`, {
             body: JSON.stringify({ status: "ready" }),
             headers: { "Content-Type": "application/json" },
             method: "PATCH",
           });
+          if (!ready.ok) {
+            const { error } = await ready.json().catch(() => ({ error: null }));
+            throw new Error(error ?? "The file could not be finalized. Upload it again.");
+          }
         } catch (uploadError) {
           await fetch(`/api/admin/assets/${result.assetId}`, {
             body: JSON.stringify({ status: "failed" }),
