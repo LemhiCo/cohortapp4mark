@@ -369,7 +369,8 @@ Expected: `Sep 28 11:00 AM | Oct 05 11:00 AM | Oct 12 11:00 AM | Oct 19 11:00 AM
 - [ ] Mark uploads one cohort-scoped document and all four MSPs see it.
 - [ ] Mark uploads one MSP-scoped document and only that MSP sees it.
 - [ ] Mark uploads one representative video and confirms browser playback.
-- [ ] Write a one-page Mark operator guide with: sign in, update a session link, check progress, add a note, upload a file, and replace a recording.
+- [x] Write a one-page Mark operator guide with: sign in, update a session link, check progress, add a note, upload a file, and replace a recording. See [`docs/OPERATOR-GUIDE.md`](./OPERATOR-GUIDE.md). Replacing a recording currently needs Felipe, because the admin cannot delete or edit a file yet.
+- [ ] Fix upload retries. After a failed upload, uploading the same file again resumes the old attempt into the old storage path, and the new library entry is marked ready with no file behind it.
 
 **Acceptance:** Mark can run the cohort’s normal weekly work without a developer or direct database access.
 
@@ -393,7 +394,7 @@ Expected: `Sep 28 11:00 AM | Oct 05 11:00 AM | Oct 12 11:00 AM | Oct 19 11:00 AM
 
 ### Phase 6 — Deployment and handoff — RELEASE BLOCKER
 
-- [ ] Confirm production Vercel points to GitHub `main`.
+- [x] Confirm production Vercel points to GitHub `main`. Verified 2026-09-27: each of the last 12 production deployments is a commit on `main`, which is the default branch.
 - [ ] Confirm `APP_URL` matches the public production origin.
 - [ ] Confirm Supabase Auth allows the production origin and `/auth/confirm` callback.
 - [ ] Confirm production Storage file-size limits support the expected recording size.
