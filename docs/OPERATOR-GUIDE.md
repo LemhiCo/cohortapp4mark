@@ -44,9 +44,14 @@ Open the MSP from **MSP progress** or from the cohort’s **MSP portals** list.
 
 After a group session: upload the recording (Recording · One cohort · attach to that week), then the transcript (Transcript · One cohort). There is no summary field yet, so upload the summary and action items as a document (Documentation · One cohort).
 
-## Replacing a file
+## Fix, replace, or remove a file
 
-The portal cannot delete or edit a file yet. Upload the corrected version with a clear title, such as “Week 1 recording (corrected)”, and ask Felipe to remove the old one.
+Every item in **Library** → **Assets** has **Open**, **Edit**, and **Delete**:
+
+- **Edit** changes the **Title** and **Category**. **Save changes** updates it everywhere MSPs see it.
+- **Delete** asks you to confirm, then **Delete permanently** removes the item and its stored file. MSPs lose access immediately, and this can’t be undone.
+
+To replace a recording, upload the new file first, check it with **Open**, then delete the old one. Who can see a file can’t be changed after upload; to share it more widely or narrowly, upload it again with the right **Who can see it** and delete the original.
 
 ## MSP details and logos
 
@@ -57,4 +62,3 @@ The portal cannot delete or edit a file yet. Upload the corrected version with a
 
 - New MSP logins, password resets, and extra teammates.
 - Changing a cohort’s name or start date, or the wording of the 30 tasks.
-- Removing or replacing a file.
