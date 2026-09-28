@@ -388,7 +388,7 @@ Expected: `Sep 28 11:00 AM | Oct 05 11:00 AM | Oct 12 11:00 AM | Oct 19 11:00 AM
 - [x] Confirm each MSP’s heading/name and denial from `/admin`.
 - [x] Confirm signed-out visitors are redirected to `/sign-in`. Production, 2026-09-27: `/cohort`, `/checklist`, `/library`, `/team`, `/admin`, `/admin/library`, and `/admin/msps/…` all return 307 to `/sign-in`; `/api/assets/…` returns 401.
 - [x] Browser suite 16/16 (desktop and mobile) against a local production build with local-only test accounts, 2026-09-27.
-- [ ] Confirm asset signed URLs expire and foreign storage paths are denied.
+- [x] Confirm asset signed URLs expire and foreign storage paths are denied. Automated in `tests/e2e/file-access.spec.ts`, passing locally on 2026-09-27. An MSP opens its own private file. It cannot list, sign or download another MSP’s file. A signed URL fails after it expires. `/api/assets/<id>` returns 404 for a foreign file. The test creates its own data, so it only runs against a local stack.
 
 **Acceptance:** all automated checks are green, and the production acceptance sheet records the tester, date, account, and result.
 
@@ -482,6 +482,14 @@ npm run dev
 ```
 
 Required local variables are documented in `.env.example`. Never commit `.env.local` or `.env.production.local`.
+
+**Local file uploads fail with Supabase CLI 2.117.0.** Its Storage service writes with `ON CONFLICT (bucket_id, name COLLATE "C")`, but no local index matches, so every upload returns `database error, code: 42P10`. Production is unaffected. Until the CLI is updated, run this after each `supabase start` or `supabase db reset`:
+
+```bash
+docker exec -i supabase_db_cohortapp4mark psql -U supabase_admin -d postgres -c 'create unique index if not exists local_objects_current_version_c on storage.objects (bucket_id, name collate "C") where archived_at is null;'
+```
+
+Browser tests are most reliable against a production build (`npm run build`, `npx next start -p 3000`, then `PLAYWRIGHT_BASE_URL=http://127.0.0.1:3000 npx playwright test`). The dev server blocks its reload socket for `127.0.0.1` and may reload the page mid-test.
 
 ### Verification
 
@@ -604,5 +612,7 @@ Real Mark admin
 | 2026-09-27 | Felipe | Production | Launch migration, first run | No effect: rolled back, cause not captured |
 | 2026-09-27 | Felipe | Production | Launch migration, second run, plus verification query | Pass: `Cohort 1`, `2026-09-28`, no override, Mark as lead (Head of Success), `0, 0, 0, 0, 19` |
 | 2026-09-27 | Claude | Production | Admin “Upcoming sessions” showed UTC times (3:00 PM for 11:00 AM ET) | Fixed in `3aa2990` and deployed |
+| 2026-09-27 | Claude | Production | Every recent production deployment is a commit on `main` | Pass: last 12 deployments |
+| 2026-09-27 | Claude | Local production build | `tests/e2e/file-access.spec.ts`: own file opens, foreign file denied, signed URL expires, route 404s foreign file | Pass: 4/4 |
 | — | Felipe | Production | Follow-up check: session dates, accounts by role, trigger | Pending |
 | — | Felipe | Production | One MSP signs in and is redirected away from `/admin` | Pending |

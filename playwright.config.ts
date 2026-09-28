@@ -10,6 +10,8 @@ export default defineConfig({
     },
     {
       name: "mobile-chrome",
+      // Storage isolation doesn't depend on viewport; run it once, on desktop.
+      testIgnore: /file-access\.spec\.ts/,
       use: { ...devices["Pixel 7"], channel: "chrome" },
     },
   ],
