@@ -11,7 +11,7 @@ export default defineConfig({
     {
       name: "mobile-chrome",
       // Storage and upload checks don't depend on viewport; run them once, on desktop.
-      testIgnore: /(file-access|admin-upload|admin-asset-management|session-package|admin-dashboard|task-customization)\.spec\.ts/,
+      testIgnore: /(file-access|admin-upload|admin-asset-management|session-package|admin-dashboard|task-customization|view-as-msp)\.spec\.ts/,
       use: { ...devices["Pixel 7"], channel: "chrome" },
     },
   ],

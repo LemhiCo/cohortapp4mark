@@ -29,6 +29,7 @@ Open the MSP from **MSP progress** or from the cohort’s **MSP portals** list.
 - **Hide for this MSP** takes a program task off just this MSP’s checklist and out of its progress; **Show again** puts it back.
 - **Add a Week N task for this MSP** adds an extra task that only this MSP sees. **Remove** takes it off again; any past completion stays in the history.
 - **People** lists who has access. **Library** lists exactly which files this MSP can see.
+- **View as MSP** shows that MSP’s Cohort, Checklist, and Library pages exactly as they see them. It is read-only; **Back to MSP admin** returns here.
 
 ## Share a file, recording, or link
 

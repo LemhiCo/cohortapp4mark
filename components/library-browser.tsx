@@ -38,7 +38,8 @@ function fileLabel(asset: LibraryAsset) {
   return "Open";
 }
 
-export function LibraryBrowser({ assets }: { assets: LibraryAsset[] }) {
+/** `direct` opens files straight from storage, for an admin previewing an MSP's library. */
+export function LibraryBrowser({ assets, openMode = "portal" }: { assets: LibraryAsset[]; openMode?: "portal" | "direct" }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<(typeof filters)[number][0]>("all");
 
@@ -102,9 +103,15 @@ export function LibraryBrowser({ assets }: { assets: LibraryAsset[] }) {
                 </a>
               ) : (
                 <>
-                  <Link className="min-h-10 rounded-md bg-evergreen px-4 py-2 text-sm font-semibold text-white hover:bg-dark-evergreen" href={`/library/${asset.id}`}>
-                    {fileLabel(asset)}
-                  </Link>
+                  {openMode === "direct" ? (
+                    <a className="min-h-10 rounded-md bg-evergreen px-4 py-2 text-sm font-semibold text-white hover:bg-dark-evergreen" href={`/api/assets/${asset.id}`} rel="noreferrer" target="_blank">
+                      {fileLabel(asset)} ↗
+                    </a>
+                  ) : (
+                    <Link className="min-h-10 rounded-md bg-evergreen px-4 py-2 text-sm font-semibold text-white hover:bg-dark-evergreen" href={`/library/${asset.id}`}>
+                      {fileLabel(asset)}
+                    </Link>
+                  )}
                   <a className="min-h-10 rounded-md border border-line px-4 py-2 text-sm font-semibold text-evergreen hover:border-evergreen" href={`/api/assets/${asset.id}?download=1`}>
                     Download
                   </a>

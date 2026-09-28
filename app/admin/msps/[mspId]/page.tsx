@@ -83,6 +83,9 @@ export default async function AdminMspPage({ params }: { params: Promise<{ mspId
         <span className="text-line">/</span>
         <span className="capitalize text-muted">{msp.status}</span>
         {msp.website ? <><span className="text-line">·</span><a className="text-evergreen hover:underline" href={msp.website} rel="noreferrer" target="_blank">Website ↗</a></> : null}
+        <Link className="ml-auto rounded-md border border-line px-3 py-1.5 font-semibold text-evergreen hover:border-evergreen" href={`/admin/msps/${msp.id}/preview/cohort`}>
+          View as MSP
+        </Link>
       </div>
 
       <section className="rounded-xl border border-line bg-paper p-6 shadow-[0_18px_50px_rgba(18,19,15,0.06)] sm:p-8">
