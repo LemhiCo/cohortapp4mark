@@ -26,6 +26,8 @@ Open the MSP from **MSP progress** or from the cohort’s **MSP portals** list.
 - The top shows overall progress, W1–W4, and a warning when work from a past week is still open.
 - **Complete Lemhi task** checks off a Lemhi-owned task or Checkpoint; **Reopen Lemhi task** undoes it. MSP-owned tasks can only be checked by the MSP.
 - Open **Notes** under a task, write in **Reply to this MSP**, and click **Reply**. Notes are always visible to that MSP; there are no internal-only notes.
+- **Hide for this MSP** takes a program task off just this MSP’s checklist and out of its progress; **Show again** puts it back.
+- **Add a Week N task for this MSP** adds an extra task that only this MSP sees. **Remove** takes it off again; any past completion stays in the history.
 - **People** lists who has access. **Library** lists exactly which files this MSP can see.
 
 ## Share a file, recording, or link
