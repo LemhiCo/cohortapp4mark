@@ -20,7 +20,9 @@ Set these variables in each Vercel environment:
 4. Create the Vercel project from the GitHub repository and add the environment variables above.
 5. Add the production and preview origins to Supabase Auth URL Configuration. Include `/auth/confirm` callback URLs for both.
 6. Configure custom SMTP in both Supabase projects. Use a verified Lemhi sending domain and set a branded sender address.
-7. Bootstrap the first production admin with `npm run admin:bootstrap -- admin@lemhi.com "Full Name"` using production environment variables.
+7. Bootstrap the first production admin using production environment variables:
+   - Email invitation: `npm run admin:bootstrap -- admin@lemhi.com "Full Name"`
+   - Temporary password without SMTP: set `ADMIN_TEMP_PASSWORD` in the command environment, then run the same command. The script creates and confirms the user, verifies the `lemhi_admin` profile, and never prints the password.
 8. Upload the 19 starter files with `npm run assets:seed -- manifest.json ./starter-files`.
 9. Add the chosen domain in Vercel, point its DNS record, and update `APP_URL` plus Supabase Auth URLs.
 

@@ -421,10 +421,11 @@ Never create an MSP auth user before its invitation row. The database trigger re
 ### Lemhi admin
 
 1. Confirm the address ends in `@lemhi.com`.
-2. Insert or activate the email in `admin_allowlist`.
-3. Create and auto-confirm the Auth user with the identical email.
-4. Verify the profile role is `lemhi_admin` and `msp_id` is `NULL`.
-5. Verify `/admin` access.
+2. Generate a strong temporary password in a password manager.
+3. Run `scripts/bootstrap-admin.mjs` with production environment variables and `ADMIN_TEMP_PASSWORD` set only in the command environment.
+4. The script inserts or activates the email in `admin_allowlist`, creates and confirms the Auth user, and verifies the resulting profile.
+5. Verify the profile role is `lemhi_admin` and `msp_id` is `NULL`.
+6. Verify `/admin` access.
 
 Never add an MSP login email to `admin_allowlist`.
 
