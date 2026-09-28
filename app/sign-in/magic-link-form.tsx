@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
 import { requestMagicLink, type MagicLinkState } from "./actions";
 
@@ -8,6 +8,7 @@ const initialState: MagicLinkState = { status: "idle", message: "" };
 
 export function MagicLinkForm({ demoMode }: { demoMode: boolean }) {
   const [state, formAction, pending] = useActionState(requestMagicLink, initialState);
+  const [hasPassword, setHasPassword] = useState(false);
 
   return (
     <form action={formAction} className="mt-8 space-y-5">
@@ -26,18 +27,37 @@ export function MagicLinkForm({ demoMode }: { demoMode: boolean }) {
         />
       </div>
 
+      <div className="space-y-2">
+        <label htmlFor="password" className="block text-sm font-semibold text-dark-evergreen">
+          Password <span className="font-normal text-muted">(if Lemhi gave you one)</span>
+        </label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          autoComplete="current-password"
+          onChange={(event) => setHasPassword(Boolean(event.target.value))}
+          placeholder="Temporary password"
+          className="min-h-12 w-full rounded-md border border-line bg-white px-4 text-base text-forest-ink shadow-sm placeholder:text-muted/70 focus:border-evergreen focus:outline-none"
+        />
+      </div>
+
       <button
         type="submit"
         disabled={pending}
         className="flex min-h-12 w-full items-center justify-center rounded-md bg-evergreen px-5 text-base font-semibold text-white transition hover:bg-dark-evergreen disabled:cursor-wait disabled:opacity-65"
       >
         {pending
-          ? demoMode
-            ? "Opening demo portal…"
-            : "Sending secure link…"
-          : demoMode
-            ? "Enter the demo portal"
-            : "Email me a sign-in link"}
+          ? hasPassword
+            ? "Signing in…"
+            : demoMode
+              ? "Opening demo portal…"
+              : "Sending secure link…"
+          : hasPassword
+            ? "Sign in"
+            : demoMode
+              ? "Enter the demo portal"
+              : "Email me a sign-in link"}
       </button>
 
       {state.message ? (

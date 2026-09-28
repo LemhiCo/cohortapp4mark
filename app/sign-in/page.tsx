@@ -51,8 +51,8 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
           </h2>
           <p className="mt-4 text-base leading-7 text-muted">
             {demoMode
-              ? "For this team preview, enter any @lemhi.com email address. No email or password is required."
-              : "Use the email address where you received your Lemhi invitation. No password required."}
+              ? "MSP partners can sign in with the email and temporary password supplied by Lemhi. For the internal preview, Lemhi team members can leave the password blank."
+              : "Sign in with your Lemhi portal password, or leave the password blank to receive a secure email link."}
           </p>
 
           {error ? (
@@ -68,8 +68,8 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
           <div className="mt-8 border-t border-line pt-6">
             <p className="text-sm leading-6 text-muted">
               {demoMode
-                ? "Demo access opens a shared workspace with sample data and no admin permissions."
-                : "The link expires for your protection. If it does, return here to request a new one."}
+                ? "Password access opens your assigned MSP portal. Password-free demo access opens the shared sample workspace."
+                : "Email links expire for your protection. If a link expires, return here to request another."}
             </p>
           </div>
         </div>
