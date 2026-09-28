@@ -161,14 +161,14 @@ from public.cohorts c;
 
 Expected from Sep 28 to Oct 4 Eastern: `Cohort 1`, `active`, `1`, `1`, `0`.
 
-**After merging, as Mark or Felipe in production:**
+**After merging, as Mark or Felipe in production:** all passed on 2026-09-28 (Felipe, signed in as Mark).
 
-- [ ] `/admin` shows **Stuck tasks** and an **Every cohort** card for Cohort 1 at Week 1.
-- [ ] Upload one small MSP-scoped test file and open it from that MSP’s account, then **Delete** it from the library and confirm the MSP can no longer open it. This also covers PR #1’s check.
-- [ ] **Edit** one starter asset’s title, save it, then change it back.
-- [ ] On one MSP page, **View as MSP** shows its Cohort, Checklist, and Library; **Back to MSP admin** returns.
-- [ ] **Program** says “the 1 upcoming or active cohort”. Don’t save an edit there unless you mean it; it reaches Cohort 1 immediately.
-- [ ] **Recordings** opens and lists Cohort 1’s four group sessions.
+- [x] `/admin` shows **Stuck tasks** and an **Every cohort** card for Cohort 1 at Week 1. Stuck tasks: “Nothing is stuck from past weeks.” Card: Cohort 1 · Week 1 of 4 · 4 MSPs.
+- [x] Upload one small MSP-scoped test file, open it, then **Delete** it from the library and confirm the MSP can no longer see it. This also covers PR #1’s check. A PDF was uploaded for BluePeak only and opened from the admin library. It appeared in BluePeak’s View as MSP library (20 files) and not in Harbor Ridge’s. After **Delete permanently**, BluePeak was back to 19.
+- [x] **Edit** a title and save it. Done on the test file instead of a starter asset, which leaves the real library untouched.
+- [x] On one MSP page, **View as MSP** shows its Cohort, Checklist, and Library; **Back to MSP admin** returns. BluePeak: read-only bar shown, no check-off buttons or note box, 19 files.
+- [x] **Program** says “the 1 upcoming or active cohort”. Nothing was saved.
+- [x] **Recordings** opens and lists Cohort 1’s four group sessions: Sep 28, Oct 5, Oct 12, Oct 19.
 
 ## 4. MVP scope and definition of done
 
@@ -418,7 +418,7 @@ Expected: `Sep 28 11:00 AM | Oct 05 11:00 AM | Oct 12 11:00 AM | Oct 19 11:00 AM
 - [ ] Spot-check every file from a second MSP account.
 - [ ] Confirm a PDF previews inline and downloads.
 - [ ] Confirm ZIP, DOCX, PPTX, and other unsupported preview types download cleanly.
-- [ ] Confirm an MSP-scoped test file is invisible to the other three MSPs, then delete the test file.
+- [ ] Confirm an MSP-scoped test file is invisible to the other three MSPs, then delete the test file. Partly done 2026-09-28 (Felipe): a BluePeak-only file was hidden from Harbor Ridge in View as MSP, then deleted. Northstar and SummitDesk not yet checked.
 - [ ] Correct the placeholder Microsoft developer metadata in the Conversation Coach package before external Microsoft distribution.
 
 **Acceptance:** all 19 assets are reachable by intended users, no broken or demo resources remain, and private scope is proven.
@@ -431,7 +431,7 @@ Expected: `Sep 28 11:00 AM | Oct 05 11:00 AM | Oct 12 11:00 AM | Oct 19 11:00 AM
 - [ ] An MSP completes and reopens one MSP-owned task.
 - [ ] Mark and an MSP exchange one note on the same task.
 - [ ] Mark uploads one cohort-scoped document and all four MSPs see it.
-- [ ] Mark uploads one MSP-scoped document and only that MSP sees it.
+- [ ] Mark uploads one MSP-scoped document and only that MSP sees it. The upload works from Mark’s account and shows only in BluePeak’s View as MSP (Felipe, 2026-09-28). Still to check: from an actual MSP login, and against all three other MSPs.
 - [ ] Mark uploads one representative video and confirms browser playback.
 - [x] Write a one-page Mark operator guide with: sign in, update a session link, check progress, add a note, upload a file, and replace a recording. See [`docs/OPERATOR-GUIDE.md`](./OPERATOR-GUIDE.md). On `main`, replacing a recording still needs Felipe. On `mvp-autonomous` the guide also covers editing, deleting, recordings, per-MSP tasks, View as MSP, and the program editor. That matches the app once the branch is merged.
 - [ ] Fix upload retries. After a failed upload, uploading the same file again resumes the old attempt into the old storage path, and the new library entry is marked ready with no file behind it. Fixed on `mvp-autonomous` (`49d317f`), which supersedes [PR #1](https://github.com/LemhiCo/cohortapp4mark/pull/1). It also refuses to mark an asset ready unless its file exists.
@@ -693,4 +693,4 @@ Real Mark admin
 | 2026-09-28 | Felipe | Production | Apply migrations `20260928010000`, `20260928020000`, `20260928030000` and run the check in §3 | Pass: all three succeeded; check returned `Cohort 1, active, 1, 1, 0` |
 | 2026-09-28 | Felipe | Production | Post-merge check A for `mvp-autonomous`: admin home after the merge | Pass: Recordings and Program in the menu, “Nothing is stuck from past weeks”, 4 MSPs in Week 1. Found: sessions shown as “3:00 PM UTC” |
 | 2026-09-28 | Claude | Local production build | `session-time.spec.ts` with a Honolulu browser, before and after the fix | Old component: fails with the server’s “11:00 AM EDT” after a reload. Fixed (`793acaa`): pass. Full suite `test:db` 75/75, Playwright 39 passed, 1 skipped (write check) |
-| — | Felipe or Mark | Production | Post-merge checks B–E for `mvp-autonomous` in §3 | Pending |
+| 2026-09-28 | Felipe | Production | Post-merge checks B–E for `mvp-autonomous` in §3, as Mark | Pass: View as MSP (BluePeak); BluePeak-only PDF uploaded, renamed, opened, visible to BluePeak only (Harbor Ridge checked), deleted; Program reach text; Recordings lists 4 sessions |
