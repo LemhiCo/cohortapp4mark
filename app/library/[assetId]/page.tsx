@@ -15,7 +15,7 @@ export default async function AssetPage({ params }: { params: Promise<{ assetId:
     supabase.from("msps").select("name").eq("id", profile.msp_id).single(),
     supabase
       .from("assets")
-      .select("id, title, category, kind, mime_type, storage_path, external_url, summary, action_items")
+      .select("id, title, category, kind, mime_type, storage_path, external_url, summary, action_items, session_id")
       .eq("id", assetId)
       .eq("status", "ready")
       .maybeSingle(),
@@ -28,6 +28,16 @@ export default async function AssetPage({ params }: { params: Promise<{ assetId:
     const { data } = await supabase.storage.from("portal-assets").createSignedUrl(asset.storage_path, 300);
     signedUrl = data?.signedUrl ?? null;
   }
+
+  const { data: sessionFiles } = asset.session_id
+    ? await supabase
+      .from("assets")
+      .select("id, title, category")
+      .eq("session_id", asset.session_id)
+      .eq("status", "ready")
+      .neq("id", asset.id)
+      .order("category")
+    : { data: [] };
 
   const actionItems = Array.isArray(asset.action_items)
     ? asset.action_items.filter((item): item is string => typeof item === "string")
@@ -75,6 +85,19 @@ export default async function AssetPage({ params }: { params: Promise<{ assetId:
                 <h2 className="font-serif text-2xl font-bold text-dark-evergreen">Action items</h2>
                 <ul className="mt-4 space-y-3 text-sm leading-6 text-muted">
                   {actionItems.map((item) => <li className="border-l-2 border-accent-orange pl-3" key={item}>{item}</li>)}
+                </ul>
+              </section>
+            ) : null}
+            {sessionFiles?.length ? (
+              <section className="rounded-xl border border-line bg-paper p-6">
+                <h2 className="font-serif text-2xl font-bold text-dark-evergreen">From this session</h2>
+                <ul className="mt-4 space-y-2">
+                  {sessionFiles.map((file) => (
+                    <li key={file.id}>
+                      <Link className="font-semibold text-evergreen hover:underline" href={`/library/${file.id}`}>{file.title}</Link>
+                      <span className="ml-2 text-sm capitalize text-muted">{file.category.replace("_", " ")}</span>
+                    </li>
+                  ))}
                 </ul>
               </section>
             ) : null}

@@ -127,3 +127,129 @@ export async function updateMspSettings(
   revalidatePath("/admin");
   return { status: "success", message: "MSP settings saved." };
 }
+
+const hideSchema = taskSchema.extend({ hidden: z.enum(["true", "false"]) });
+const extraTaskSchema = z.object({
+  cohortWeekId: z.uuid(),
+  description: z.string().trim().max(2000),
+  kind: z.enum(["task", "checkpoint"]),
+  mspId: z.uuid(),
+  ownerLabel: z.string().trim().min(2).max(120),
+  ownerType: z.enum(["msp", "lemhi"]),
+  title: z.string().trim().min(2).max(200),
+});
+
+export async function setTaskHiddenForMsp(
+  _previousState: AdminMspActionState,
+  formData: FormData,
+): Promise<AdminMspActionState> {
+  const profile = await requireAdminProfile();
+  const parsed = hideSchema.safeParse({
+    hidden: formData.get("hidden"),
+    mspId: formData.get("mspId"),
+    taskId: formData.get("taskId"),
+  });
+  if (!parsed.success) return { status: "error", message: "That task could not be found." };
+
+  const { msp, supabase, task } = await validateTask(parsed.data.mspId, parsed.data.taskId);
+  if (!msp || !task) return { status: "error", message: "That task could not be found." };
+
+  // The database only allows hiding an active program task in the MSP's cohort.
+  const { error } = parsed.data.hidden === "true"
+    ? await supabase.from("msp_hidden_tasks").upsert(
+      { cohort_task_id: task.id, hidden_by: profile.id, msp_id: msp.id },
+      { ignoreDuplicates: true, onConflict: "msp_id,cohort_task_id" },
+    )
+    : await supabase.from("msp_hidden_tasks").delete().eq("msp_id", msp.id).eq("cohort_task_id", task.id);
+
+  if (error) {
+    console.error("Task visibility update failed", error);
+    return { status: "error", message: "The task could not be updated." };
+  }
+
+  revalidatePath(`/admin/msps/${msp.id}`);
+  revalidatePath("/admin");
+  return { status: "success", message: parsed.data.hidden === "true" ? "Hidden for this MSP." : "Shown again." };
+}
+
+export async function addExtraTask(
+  _previousState: AdminMspActionState,
+  formData: FormData,
+): Promise<AdminMspActionState> {
+  await requireAdminProfile();
+  const parsed = extraTaskSchema.safeParse({
+    cohortWeekId: formData.get("cohortWeekId"),
+    description: formData.get("description") ?? "",
+    kind: formData.get("kind"),
+    mspId: formData.get("mspId"),
+    ownerLabel: formData.get("ownerLabel"),
+    ownerType: formData.get("ownerType"),
+    title: formData.get("title"),
+  });
+  if (!parsed.success) return { status: "error", message: "Enter a title and who owns the task." };
+
+  const supabase = await createServerSupabaseClient();
+  const [{ data: msp }, { data: week }] = await Promise.all([
+    supabase.from("msps").select("id, cohort_id").eq("id", parsed.data.mspId).maybeSingle(),
+    supabase.from("cohort_weeks").select("id, cohort_id").eq("id", parsed.data.cohortWeekId).maybeSingle(),
+  ]);
+  if (!msp || !week || week.cohort_id !== msp.cohort_id) return { status: "error", message: "That week could not be found." };
+
+  // Extra tasks come after everything this MSP already has in the week.
+  const { data: last } = await supabase
+    .from("cohort_tasks")
+    .select("position")
+    .eq("cohort_week_id", week.id)
+    .or(`msp_id.is.null,msp_id.eq.${msp.id}`)
+    .order("position", { ascending: false })
+    .limit(1);
+
+  const { error } = await supabase.from("cohort_tasks").insert({
+    cohort_id: msp.cohort_id,
+    cohort_week_id: week.id,
+    description: parsed.data.description,
+    kind: parsed.data.kind,
+    msp_id: msp.id,
+    owner_label: parsed.data.ownerLabel,
+    owner_type: parsed.data.ownerType,
+    position: (last?.[0]?.position ?? 0) + 1,
+    title: parsed.data.title,
+  });
+
+  if (error) {
+    console.error("Extra task creation failed", error);
+    return { status: "error", message: "The task could not be added." };
+  }
+
+  revalidatePath(`/admin/msps/${msp.id}`);
+  revalidatePath("/admin");
+  return { status: "success", message: "Task added for this MSP." };
+}
+
+export async function removeExtraTask(
+  _previousState: AdminMspActionState,
+  formData: FormData,
+): Promise<AdminMspActionState> {
+  await requireAdminProfile();
+  const parsed = taskSchema.safeParse({ mspId: formData.get("mspId"), taskId: formData.get("taskId") });
+  if (!parsed.success) return { status: "error", message: "That task could not be found." };
+
+  // Archive rather than delete, so any completion history is kept.
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from("cohort_tasks")
+    .update({ archived_at: new Date().toISOString() })
+    .eq("id", parsed.data.taskId)
+    .eq("msp_id", parsed.data.mspId)
+    .is("archived_at", null)
+    .select("id");
+
+  if (error || !data?.length) {
+    console.error("Extra task removal failed", error);
+    return { status: "error", message: "The task could not be removed." };
+  }
+
+  revalidatePath(`/admin/msps/${parsed.data.mspId}`);
+  revalidatePath("/admin");
+  return { status: "success", message: "Removed." };
+}

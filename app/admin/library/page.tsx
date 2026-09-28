@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/app-shell";
+import { AssetAdminRow } from "@/components/asset-admin-row";
 import { AssetUploadForm } from "@/components/asset-upload-form";
 import { requireAdminProfile } from "@/lib/auth";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -26,7 +27,7 @@ export default async function AdminLibraryPage() {
     supabase.from("program_tasks").select("id, program_id, week_id, position, title").is("archived_at", null).order("position"),
     supabase.from("cohort_weeks").select("id, cohort_id, week_number, title").order("week_number"),
     supabase.from("cohort_tasks").select("id, cohort_id, cohort_week_id, msp_id, position, title").is("archived_at", null).order("position"),
-    supabase.from("assets").select("id, title, category, kind, scope, program_id, cohort_id, msp_id, status, created_at").order("created_at", { ascending: false }),
+    supabase.from("assets").select("id, title, category, kind, scope, program_id, cohort_id, msp_id, status, external_url, created_at").order("created_at", { ascending: false }),
   ]);
 
   const cohortNames = new Map((cohorts ?? []).map((cohort) => [cohort.id, cohort.name]));
@@ -96,15 +97,16 @@ export default async function AdminLibraryPage() {
           </div>
           <div className="mt-6 divide-y divide-line">
             {assets?.length ? assets.map((asset) => (
-              <div className="py-4 first:pt-0" key={asset.id}>
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0">
-                    <h3 className="font-semibold text-dark-evergreen">{asset.title}</h3>
-                    <p className="mt-1 text-sm capitalize text-muted">{asset.category.replace("_", " ")} · {asset.kind} · {scopeLabel(asset)}</p>
-                  </div>
-                  <span className={`rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wide ${asset.status === "ready" ? "bg-sage text-dark-evergreen" : "bg-[#F7E4D6] text-[#6B3216]"}`}>{asset.status}</span>
-                </div>
-              </div>
+              <AssetAdminRow
+                assetId={asset.id}
+                category={asset.category}
+                key={asset.id}
+                kind={asset.kind}
+                openHref={asset.status !== "ready" ? null : asset.kind === "link" ? asset.external_url : `/api/assets/${asset.id}`}
+                scopeLabel={scopeLabel(asset)}
+                status={asset.status}
+                title={asset.title}
+              />
             )) : (
               <div className="rounded-lg border border-dashed border-line px-5 py-10 text-center text-base text-muted">No assets yet.</div>
             )}

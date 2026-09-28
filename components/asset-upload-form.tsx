@@ -2,10 +2,8 @@
 
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Upload } from "tus-js-client";
 
-import { createBrowserSupabaseClient } from "@/lib/supabase/client";
-import { getPublicSupabaseEnv } from "@/lib/env";
+import { type AssetAttachment, type FileAssetDetails, uploadFileAsset } from "@/lib/upload-asset";
 
 type Scope = "program" | "cohort" | "msp";
 type UploadOption = { id: string; label: string };
@@ -19,46 +17,6 @@ type AssetUploadFormProps = {
 };
 
 const fieldClass = "min-h-12 w-full rounded-md border border-line bg-white px-4 text-base font-normal shadow-sm focus:border-evergreen focus:outline-none";
-
-function resumableEndpoint() {
-  const { url } = getPublicSupabaseEnv();
-  const parsed = new URL(url);
-  if (parsed.hostname.endsWith(".supabase.co")) {
-    const projectId = parsed.hostname.split(".")[0];
-    return `https://${projectId}.storage.supabase.co/storage/v1/upload/resumable`;
-  }
-  return `${url.replace(/\/$/, "")}/storage/v1/upload/resumable`;
-}
-
-function uploadResumable(file: File, path: string, accessToken: string, onProgress: (percent: number) => void) {
-  return new Promise<void>((resolve, reject) => {
-    const { publishableKey } = getPublicSupabaseEnv();
-    const upload = new Upload(file, {
-      chunkSize: 6 * 1024 * 1024,
-      endpoint: resumableEndpoint(),
-      headers: { apikey: publishableKey, authorization: `Bearer ${accessToken}` },
-      metadata: {
-        bucketName: "portal-assets",
-        cacheControl: "3600",
-        contentType: file.type || "application/octet-stream",
-        objectName: path,
-      },
-      onError: reject,
-      onProgress(bytesUploaded, bytesTotal) {
-        onProgress(Math.round((bytesUploaded / bytesTotal) * 100));
-      },
-      onSuccess: () => resolve(),
-      removeFingerprintOnSuccess: true,
-      retryDelays: [0, 3000, 5000, 10000, 20000],
-      uploadDataDuringCreation: true,
-    });
-
-    void upload.findPreviousUploads().then((previousUploads) => {
-      if (previousUploads.length) upload.resumeFromPreviousUpload(previousUploads[0]);
-      upload.start();
-    }).catch(reject);
-  });
-}
 
 export function AssetUploadForm({ attachments, cohorts, msps, programs }: AssetUploadFormProps) {
   const router = useRouter();
@@ -95,47 +53,23 @@ export function AssetUploadForm({ attachments, cohorts, msps, programs }: AssetU
     const file = formData.get("file");
 
     try {
-      const payload = {
-        attachment: attachmentType && attachmentId ? { id: attachmentId, type: attachmentType } : null,
-        category: formData.get("category"),
-        externalUrl: kind === "link" ? formData.get("externalUrl") : undefined,
-        fileName: kind === "file" && file instanceof File ? file.name : undefined,
-        kind,
-        mimeType: kind === "file" && file instanceof File ? file.type || "application/octet-stream" : undefined,
-        scope,
-        scopeId,
-        sizeBytes: kind === "file" && file instanceof File ? file.size : undefined,
-        title: formData.get("title"),
-      };
+      const attachment: AssetAttachment = attachmentType && attachmentId
+        ? { id: attachmentId, type: attachmentType as NonNullable<AssetAttachment>["type"] }
+        : null;
+      const category = String(formData.get("category")) as FileAssetDetails["category"];
+      const title = String(formData.get("title") ?? "");
 
-      if (kind === "file" && (!(file instanceof File) || file.size === 0)) throw new Error("Choose a file to upload.");
-      const response = await fetch("/api/admin/assets", {
-        body: JSON.stringify(payload),
-        headers: { "Content-Type": "application/json" },
-        method: "POST",
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error ?? "The asset could not be created.");
-
-      if (kind === "file" && file instanceof File) {
-        try {
-          const supabase = createBrowserSupabaseClient();
-          const { data: { session } } = await supabase.auth.getSession();
-          if (!session?.access_token) throw new Error("Your session expired. Sign in and try again.");
-          await uploadResumable(file, result.path, session.access_token, setUploadPercent);
-          await fetch(`/api/admin/assets/${result.assetId}`, {
-            body: JSON.stringify({ status: "ready" }),
-            headers: { "Content-Type": "application/json" },
-            method: "PATCH",
-          });
-        } catch (uploadError) {
-          await fetch(`/api/admin/assets/${result.assetId}`, {
-            body: JSON.stringify({ status: "failed" }),
-            headers: { "Content-Type": "application/json" },
-            method: "PATCH",
-          });
-          throw uploadError;
-        }
+      if (kind === "file") {
+        if (!(file instanceof File) || file.size === 0) throw new Error("Choose a file to upload.");
+        await uploadFileAsset({ attachment, category, scope, scopeId, title }, file, setUploadPercent);
+      } else {
+        const response = await fetch("/api/admin/assets", {
+          body: JSON.stringify({ attachment, category, externalUrl: formData.get("externalUrl"), kind, scope, scopeId, title }),
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error ?? "The asset could not be created.");
       }
 
       formRef.current?.reset();

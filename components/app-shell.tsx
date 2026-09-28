@@ -4,7 +4,7 @@ import type { CurrentProfile } from "@/lib/auth";
 import { signOut } from "@/app/actions";
 
 type AppShellProps = {
-  activeNav?: "cohort" | "checklist" | "library" | "team" | "cohorts" | "admin-library";
+  activeNav?: "cohort" | "checklist" | "library" | "team" | "cohorts" | "admin-recordings" | "admin-library" | "admin-program";
   children: React.ReactNode;
   eyebrow: string;
   profile: CurrentProfile;
@@ -21,7 +21,9 @@ export function AppShell({ activeNav, children, eyebrow, profile, title }: AppSh
   ];
   const adminNav = [
     { href: "/admin", id: "cohorts" as const, label: "Cohorts" },
+    { href: "/admin/recordings", id: "admin-recordings" as const, label: "Recordings" },
     { href: "/admin/library", id: "admin-library" as const, label: "Library" },
+    { href: "/admin/program", id: "admin-program" as const, label: "Program" },
   ];
   const navItems = isAdmin ? adminNav : mspNav;
 

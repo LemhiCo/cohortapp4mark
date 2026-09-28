@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { AdminTaskButton, AdminTaskNoteForm } from "@/components/admin-task-controls";
+import { ExtraTaskForm, HideTaskToggle, RemoveExtraTaskButton } from "@/components/msp-task-customization";
 import { AppShell } from "@/components/app-shell";
 import { MspSettingsForm } from "@/components/msp-settings-form";
 import { requireAdminProfile } from "@/lib/auth";
@@ -40,6 +41,7 @@ export default async function AdminMspPage({ params }: { params: Promise<{ mspId
     { data: invitations },
     { data: progress },
     { data: assets },
+    { data: hiddenTasks },
   ] = await Promise.all([
     supabase.from("cohorts").select("id, name").eq("id", msp.cohort_id).single(),
     supabase.from("cohort_weeks").select("*").eq("cohort_id", msp.cohort_id).order("week_number"),
@@ -50,7 +52,10 @@ export default async function AdminMspPage({ params }: { params: Promise<{ mspId
     supabase.from("invitations").select("id, email, role, status, created_at").eq("msp_id", msp.id).order("created_at", { ascending: false }),
     supabase.from("msp_progress").select("*").eq("msp_id", msp.id).order("week_number"),
     supabase.from("assets").select("id, title, category, kind, scope, external_url, cohort_id, msp_id, status").eq("status", "ready").order("created_at", { ascending: false }),
+    supabase.from("msp_hidden_tasks").select("cohort_task_id").eq("msp_id", msp.id),
   ]);
+
+  const hiddenTaskIds = new Set((hiddenTasks ?? []).map((row) => row.cohort_task_id));
 
   if (!cohort) notFound();
 
@@ -78,6 +83,9 @@ export default async function AdminMspPage({ params }: { params: Promise<{ mspId
         <span className="text-line">/</span>
         <span className="capitalize text-muted">{msp.status}</span>
         {msp.website ? <><span className="text-line">·</span><a className="text-evergreen hover:underline" href={msp.website} rel="noreferrer" target="_blank">Website ↗</a></> : null}
+        <Link className="ml-auto rounded-md border border-line px-3 py-1.5 font-semibold text-evergreen hover:border-evergreen" href={`/admin/msps/${msp.id}/preview/cohort`}>
+          View as MSP
+        </Link>
       </div>
 
       <section className="rounded-xl border border-line bg-paper p-6 shadow-[0_18px_50px_rgba(18,19,15,0.06)] sm:p-8">
@@ -116,26 +124,41 @@ export default async function AdminMspPage({ params }: { params: Promise<{ mspId
                   {weekTasks.map((task) => {
                     const completion = completionByTask.get(task.id);
                     const taskNotes = notesByTask.get(task.id) ?? [];
+                    const hidden = hiddenTaskIds.has(task.id);
+                    const extra = task.msp_id === msp.id;
                     return (
-                      <article className={`rounded-lg border p-4 sm:p-5 ${completion ? "border-evergreen/25 bg-sage/45" : "border-line bg-white"}`} key={task.id}>
+                      <article className={`rounded-lg border p-4 sm:p-5 ${hidden ? "border-dashed border-line bg-background/60 opacity-75" : completion ? "border-evergreen/25 bg-sage/45" : "border-line bg-white"}`} key={task.id}>
                         <div className="flex items-start gap-4">
-                          {canAdminComplete(task) ? <AdminTaskButton completed={Boolean(completion)} mspId={msp.id} taskId={task.id} /> : <div className={`grid size-8 shrink-0 place-items-center rounded-md border-2 text-sm font-bold ${completion ? "border-evergreen bg-evergreen text-white" : "border-line text-transparent"}`}>✓</div>}
+                          {!hidden && canAdminComplete(task) ? <AdminTaskButton completed={Boolean(completion)} mspId={msp.id} taskId={task.id} /> : <div className={`grid size-8 shrink-0 place-items-center rounded-md border-2 text-sm font-bold ${completion && !hidden ? "border-evergreen bg-evergreen text-white" : "border-line text-transparent"}`}>✓</div>}
                           <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-start justify-between gap-3"><h3 className="font-bold text-dark-evergreen">{task.title}</h3><span className={`rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wide ${task.owner_type === "lemhi" ? "bg-[#F7E4D6] text-[#6B3216]" : "bg-sage text-dark-evergreen"}`}>{task.owner_type === "lemhi" ? "Lemhi" : "MSP"}</span></div>
+                            <div className="flex flex-wrap items-start justify-between gap-3">
+                              <h3 className={`font-bold ${hidden ? "text-muted line-through" : "text-dark-evergreen"}`}>{task.title}</h3>
+                              <div className="flex flex-wrap gap-2">
+                                {hidden ? <span className="rounded-full border border-line px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-muted">Hidden for this MSP</span> : null}
+                                {extra ? <span className="rounded-full border border-evergreen/40 px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-evergreen">Only this MSP</span> : null}
+                                <span className={`rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wide ${task.owner_type === "lemhi" ? "bg-[#F7E4D6] text-[#6B3216]" : "bg-sage text-dark-evergreen"}`}>{task.owner_type === "lemhi" ? "Lemhi" : "MSP"}</span>
+                              </div>
+                            </div>
                             <p className="mt-2 text-sm leading-6 text-muted">{task.description}</p>
-                            <p className="mt-3 text-sm text-muted">Owner: <strong className="text-dark-evergreen">{task.owner_label}</strong>{completion ? ` · Completed ${formatDate(completion.completed_at)} by ${personNames.get(completion.completed_by) ?? "Lemhi team"}` : " · Open"}</p>
+                            <p className="mt-3 text-sm text-muted">Owner: <strong className="text-dark-evergreen">{task.owner_label}</strong>{hidden ? " · Not on this MSP’s checklist" : completion ? ` · Completed ${formatDate(completion.completed_at)} by ${personNames.get(completion.completed_by) ?? "Lemhi team"}` : " · Open"}</p>
+                            <div className="mt-3">
+                              {extra ? <RemoveExtraTaskButton mspId={msp.id} taskId={task.id} title={task.title} /> : <HideTaskToggle hidden={hidden} mspId={msp.id} taskId={task.id} />}
+                            </div>
                           </div>
                         </div>
-                        <details className="mt-4 border-t border-line pt-4">
-                          <summary className="cursor-pointer text-sm font-semibold text-evergreen">Notes{taskNotes.length ? ` (${taskNotes.length})` : ""}</summary>
-                          <div className="mt-4 space-y-3">
-                            {taskNotes.length ? taskNotes.map((note) => <div className="rounded-md bg-background px-4 py-3" key={note.id}><div className="flex justify-between gap-3 text-sm"><strong className="text-dark-evergreen">{personNames.get(note.author_id) ?? "Lemhi team"}</strong><span className="text-muted">{formatDate(note.created_at)}</span></div><p className="mt-2 whitespace-pre-wrap text-sm leading-6">{note.body}</p></div>) : <p className="text-sm text-muted">No notes yet.</p>}
-                          </div>
-                          <AdminTaskNoteForm mspId={msp.id} taskId={task.id} />
-                        </details>
+                        {hidden ? null : (
+                          <details className="mt-4 border-t border-line pt-4">
+                            <summary className="cursor-pointer text-sm font-semibold text-evergreen">Notes{taskNotes.length ? ` (${taskNotes.length})` : ""}</summary>
+                            <div className="mt-4 space-y-3">
+                              {taskNotes.length ? taskNotes.map((note) => <div className="rounded-md bg-background px-4 py-3" key={note.id}><div className="flex justify-between gap-3 text-sm"><strong className="text-dark-evergreen">{personNames.get(note.author_id) ?? "Lemhi team"}</strong><span className="text-muted">{formatDate(note.created_at)}</span></div><p className="mt-2 whitespace-pre-wrap text-sm leading-6">{note.body}</p></div>) : <p className="text-sm text-muted">No notes yet.</p>}
+                            </div>
+                            <AdminTaskNoteForm mspId={msp.id} taskId={task.id} />
+                          </details>
+                        )}
                       </article>
                     );
                   })}
+                  <ExtraTaskForm cohortWeekId={week.id} mspId={msp.id} weekNumber={week.week_number} />
                 </div>
               </details>
             );

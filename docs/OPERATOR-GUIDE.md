@@ -26,7 +26,10 @@ Open the MSP from **MSP progress** or from the cohort’s **MSP portals** list.
 - The top shows overall progress, W1–W4, and a warning when work from a past week is still open.
 - **Complete Lemhi task** checks off a Lemhi-owned task or Checkpoint; **Reopen Lemhi task** undoes it. MSP-owned tasks can only be checked by the MSP.
 - Open **Notes** under a task, write in **Reply to this MSP**, and click **Reply**. Notes are always visible to that MSP; there are no internal-only notes.
+- **Hide for this MSP** takes a program task off just this MSP’s checklist and out of its progress; **Show again** puts it back.
+- **Add a Week N task for this MSP** adds an extra task that only this MSP sees. **Remove** takes it off again; any past completion stays in the history.
 - **People** lists who has access. **Library** lists exactly which files this MSP can see.
+- **View as MSP** shows that MSP’s Cohort, Checklist, and Library pages exactly as they see them. It is read-only; **Back to MSP admin** returns here.
 
 ## Share a file, recording, or link
 
@@ -42,11 +45,35 @@ Open the MSP from **MSP progress** or from the cohort’s **MSP portals** list.
 3. Optionally **Attach to** a week or task so it also appears in the checklist.
 4. **Upload to library**. Keep the tab open until it reaches 100% and shows “Asset added to the library.” Brief connection drops retry on their own. If it shows an error instead, upload the file again, then open the MSP page’s **Library** to confirm it opens.
 
-After a group session: upload the recording (Recording · One cohort · attach to that week), then the transcript (Transcript · One cohort). There is no summary field yet, so upload the summary and action items as a document (Documentation · One cohort).
+## After a session: upload the recording
 
-## Replacing a file
+**Recordings** (or **Upload this session’s recording** under a session on the cohort page):
 
-The portal cannot delete or edit a file yet. Upload the corrected version with a clear title, such as “Week 1 recording (corrected)”, and ask Felipe to remove the old one.
+1. **Group session**: pick the session. It goes to every MSP in that cohort and appears under that week in their checklist. **1:1 with an MSP**: pick the MSP and the call’s date and time; only that MSP sees it.
+2. Add the **Recording** and/or **Transcript**, then type the **Summary** and **Action items** (one per line).
+3. **Upload session package**. Keep the tab open until each file reaches 100%.
+
+MSPs open the recording to see the video with the summary and action items beside it, plus a link to the transcript from the same session.
+
+## Fix, replace, or remove a file
+
+Every item in **Library** → **Assets** has **Open**, **Edit**, and **Delete**:
+
+- **Edit** changes the **Title** and **Category**. **Save changes** updates it everywhere MSPs see it.
+- **Delete** asks you to confirm, then **Delete permanently** removes the item and its stored file. MSPs lose access immediately, and this can’t be undone.
+
+To replace a recording, upload the new file first, check it with **Open**, then delete the old one. Who can see a file can’t be changed after upload; to share it more widely or narrowly, upload it again with the right **Who can see it** and delete the original.
+
+## Edit the four-week program
+
+**Program** shows every week and task. Changes reach every upcoming and active cohort immediately; ended cohorts keep their checklist as it was.
+
+- **Edit week title, subtitle and goal**, then **Save week**.
+- **Edit task** changes its title, description, owner, who checks it off, and whether it’s a checkpoint.
+- **Add a task to Week N** adds it at the end of that week for every running cohort.
+- **Archive** takes a task off every running checklist and out of progress, keeping past completions. **Restore task** under **Archived tasks** brings it back.
+
+Tasks can’t be reordered or moved to another week yet; ask Felipe.
 
 ## MSP details and logos
 
@@ -56,5 +83,5 @@ The portal cannot delete or edit a file yet. Upload the corrected version with a
 ## Ask Felipe for
 
 - New MSP logins, password resets, and extra teammates.
-- Changing a cohort’s name or start date, or the wording of the 30 tasks.
-- Removing or replacing a file.
+- Changing a cohort’s name or start date.
+- Reordering tasks or moving one to another week.

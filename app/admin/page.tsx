@@ -17,16 +17,6 @@ function nextMonday() {
   return date.toISOString().slice(0, 10);
 }
 
-function effectiveStatus(startDate: string, override: Enums<"cohort_status"> | null): Enums<"cohort_status"> {
-  if (override) return override;
-  const today = new Date().toISOString().slice(0, 10);
-  const endDate = new Date(`${startDate}T00:00:00Z`);
-  endDate.setUTCDate(endDate.getUTCDate() + 28);
-  if (today < startDate) return "upcoming";
-  if (today >= endDate.toISOString().slice(0, 10)) return "ended";
-  return "active";
-}
-
 const statusStyles: Record<Enums<"cohort_status">, string> = {
   active: "bg-sage text-dark-evergreen",
   ended: "bg-[#EAE5DC] text-muted",
@@ -48,6 +38,7 @@ export default async function AdminPage() {
     { data: owners },
     { data: progress },
     { data: upcomingSessions },
+    { data: stuckTasks },
   ] = await Promise.all([
     supabase
       .from("cohorts")
@@ -76,8 +67,23 @@ export default async function AdminPage() {
       .gte("starts_at", now.toISOString())
       .order("starts_at")
       .limit(5),
+    supabase
+      .from("cohort_stuck_tasks")
+      .select("cohort_task_id, cohort_id, week_number, title, owner_type, kind, eligible_msps, open_msps")
+      .order("open_msps", { ascending: false })
+      .order("week_number")
+      .limit(40),
   ]);
 
+  // Status and week follow each cohort's own time zone, so ask the database
+  // rather than recomputing them here in the server's UTC.
+  const cohortTimes = new Map(await Promise.all((cohorts ?? []).map(async (cohort) => {
+    const [{ data: status }, { data: week }] = await Promise.all([
+      supabase.rpc("effective_cohort_status", { target_cohort_id: cohort.id }),
+      supabase.rpc("cohort_current_week", { target_cohort_id: cohort.id }),
+    ]);
+    return [cohort.id, { status: status ?? "upcoming", week: week ?? 0 }] as const;
+  })));
   const adminNames = new Map((admins ?? []).map((admin) => [admin.id, admin.full_name || admin.email]));
   const cohortNames = new Map((cohorts ?? []).map((cohort) => [cohort.id, cohort.name]));
   const mspCounts = new Map<string, number>();
@@ -96,6 +102,27 @@ export default async function AdminPage() {
     const lastSeen = ownerByMsp.get(msp.id)?.last_seen_at;
     return Boolean(lastSeen && new Date(lastSeen) < sevenDaysAgo);
   }).length;
+  const stuck = (stuckTasks ?? [])
+    .filter((task) => task.cohort_id && cohortTimes.get(task.cohort_id)?.status === "active")
+    .slice(0, 6);
+  const cohortCards = (cohorts ?? [])
+    .filter((cohort) => cohortTimes.get(cohort.id)?.status !== "ended")
+    .map((cohort) => {
+      const cohortMsps = activeMsps.filter((msp) => msp.cohort_id === cohort.id);
+      const done = cohortMsps.reduce((sum, msp) => sum + (progressByMsp.get(msp.id)?.overall_completed_tasks ?? 0), 0);
+      const total = cohortMsps.reduce((sum, msp) => sum + (progressByMsp.get(msp.id)?.overall_total_tasks ?? 0), 0);
+      const week = cohortTimes.get(cohort.id)?.week ?? 0;
+      return {
+        behind: cohortMsps.filter((msp) => progressByMsp.get(msp.id)?.is_behind).length,
+        id: cohort.id,
+        msps: cohortMsps.length,
+        name: cohort.name,
+        percent: total ? Math.round((done / total) * 100) : 0,
+        weekLabel: week === 0
+          ? `Starts ${new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${cohort.start_date}T00:00:00Z`))}`
+          : week > 4 ? "All four weeks done" : `Week ${week} of 4`,
+      };
+    });
   const sortedMsps = [...activeMsps].sort((left, right) => {
     const leftProgress = progressByMsp.get(left.id);
     const rightProgress = progressByMsp.get(right.id);
@@ -152,7 +179,29 @@ export default async function AdminPage() {
             </div>
           </div>
 
-          <div>
+          <div className="space-y-8">
+            <div>
+              <h3 className="font-serif text-2xl font-bold text-dark-evergreen">Stuck tasks</h3>
+              <p className="mt-1 text-sm text-muted">From weeks that have passed, most MSPs open first.</p>
+              <ol className="mt-4 space-y-3">
+                {stuck.length ? stuck.map((task) => (
+                  <li className="rounded-lg border border-line bg-white/65 p-4" key={task.cohort_task_id}>
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="font-semibold text-dark-evergreen">{task.title}</p>
+                      <span className="shrink-0 rounded-full bg-[#F7E4D6] px-2.5 py-1 text-xs font-bold text-[#6B3216]">
+                        {task.open_msps} of {task.eligible_msps} MSPs
+                      </span>
+                    </div>
+                    <p className="mt-1 text-sm text-muted">
+                      Week {task.week_number} · {cohortNames.get(task.cohort_id ?? "") ?? "Cohort"}
+                      {task.owner_type === "lemhi" || task.kind === "checkpoint" ? " · Lemhi to complete" : ""}
+                    </p>
+                  </li>
+                )) : <li className="rounded-lg border border-dashed border-line p-4 text-sm text-muted">Nothing is stuck from past weeks.</li>}
+              </ol>
+            </div>
+
+            <div>
             <h3 className="font-serif text-2xl font-bold text-dark-evergreen">Upcoming sessions</h3>
             <div className="mt-4 space-y-3">
               {upcomingSessions?.length ? upcomingSessions.map((session) => (
@@ -166,8 +215,32 @@ export default async function AdminPage() {
                 </div>
               )) : <p className="rounded-lg border border-dashed border-line p-4 text-sm text-muted">No upcoming sessions.</p>}
             </div>
+            </div>
           </div>
         </div>
+
+        {cohortCards.length ? (
+          <div className="mt-8">
+            <h3 className="font-serif text-2xl font-bold text-dark-evergreen">Every cohort</h3>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {cohortCards.map((card) => (
+                <Link className="rounded-lg border border-line bg-white/65 p-4 transition hover:border-evergreen" href={`/admin/cohorts/${card.id}`} key={card.id}>
+                  <p className="font-semibold text-dark-evergreen">{card.name}</p>
+                  <p className="mt-1 text-sm text-muted">{card.weekLabel} · {card.msps} MSP{card.msps === 1 ? "" : "s"}</p>
+                  <div className="mt-4 flex items-baseline justify-between gap-3">
+                    <span className="font-serif text-3xl font-bold text-dark-evergreen">{card.percent}%</span>
+                    <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${card.behind ? "bg-[#F7E4D6] text-[#6B3216]" : "bg-sage text-dark-evergreen"}`}>
+                      {card.behind} behind
+                    </span>
+                  </div>
+                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-sage">
+                    <div className="h-full rounded-full bg-evergreen" style={{ width: `${card.percent}%` }} />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </section>
 
       <div className="grid gap-8 xl:grid-cols-[minmax(0,0.92fr)_minmax(460px,1.08fr)]">
@@ -196,7 +269,7 @@ export default async function AdminPage() {
           <div className="mt-6 space-y-3">
             {cohorts?.length ? (
               cohorts.map((cohort) => {
-                const status = effectiveStatus(cohort.start_date, cohort.status_override);
+                const status = cohortTimes.get(cohort.id)?.status ?? "upcoming";
                 return (
                   <Link
                     className="group block rounded-lg border border-line bg-white/70 p-5 transition hover:-translate-y-0.5 hover:border-evergreen hover:shadow-[0_14px_30px_rgba(18,19,15,0.07)]"
