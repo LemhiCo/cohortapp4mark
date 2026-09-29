@@ -11,7 +11,7 @@ const adminAccount = {
 };
 test("a Lemhi email with a blank password never opens a portal", async ({ page }, testInfo) => {
   await page.goto("/sign-in");
-  await expect(page.getByRole("heading", { name: "Sign in to your cohort" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Sign in to your workspace" })).toBeVisible();
   const projectSlug = testInfo.project.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
   await page.getByLabel("Work email").fill(`no-password-${projectSlug}@lemhi.com`);
   await page.getByRole("button", { name: "Email me a sign-in link" }).click();
@@ -60,7 +60,7 @@ test("a provisioned Lemhi admin password account opens the cohort pulse", async 
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
 
   await expect(page).toHaveURL(/\/admin$/);
-  await expect(page.getByRole("heading", { name: "Cohort setup" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Workspaces" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "What needs attention" })).toBeVisible();
 
   await page.goto("/cohort");

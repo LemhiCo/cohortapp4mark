@@ -29,13 +29,13 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
 
         <div className="relative max-w-2xl py-12 lg:py-20">
           <p className="mb-5 text-sm font-bold uppercase tracking-[0.2em] text-[#E7A16D]">
-            Cohort Portal
+            MSP Growth Portal
           </p>
           <h1 className="max-w-xl font-serif text-5xl font-bold leading-[0.96] tracking-[-0.025em] sm:text-6xl lg:text-7xl">
-            Everything for your cohort, in one place.
+            Your path from strategy to launch, in one place.
           </h1>
           <p className="mt-7 max-w-lg text-base leading-7 text-white/72 sm:text-lg">
-            Follow the weekly plan, join sessions, and find every document and recording your team needs.
+            Follow your roadmap, complete each requirement, and find every resource your team needs—whether you are in a cohort or working directly with Lemhi.
           </p>
         </div>
 
@@ -46,7 +46,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
         <div className="mx-auto w-full max-w-md">
           <p className="text-sm font-bold uppercase tracking-[0.18em] text-accent-orange">Welcome back</p>
           <h2 className="mt-4 font-serif text-4xl font-bold leading-tight text-dark-evergreen sm:text-5xl">
-            Sign in to your cohort
+            Sign in to your workspace
           </h2>
           <p className="mt-4 text-base leading-7 text-muted">
             Sign in with your Lemhi portal password, or leave the password blank to receive a secure email link.

@@ -3,7 +3,7 @@ import Link from "next/link";
 type PreviewPage = "cohort" | "checklist" | "library";
 
 const pages: Array<{ id: PreviewPage; label: string }> = [
-  { id: "cohort", label: "Cohort" },
+  { id: "cohort", label: "Roadmap" },
   { id: "checklist", label: "Checklist" },
   { id: "library", label: "Library" },
 ];

@@ -4,10 +4,10 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "Lemhi Cohort Portal",
-    template: "%s · Lemhi Cohort Portal",
+    default: "Lemhi MSP Growth Portal",
+    template: "%s · Lemhi MSP Growth Portal",
   },
-  description: "Cohort schedules, checklists, resources, and recordings for Lemhi partners.",
+  description: "Roadmaps, checklists, resources, sessions, and recordings for Lemhi partners.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

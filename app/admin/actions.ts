@@ -52,6 +52,20 @@ const createMspPortalSchema = z
     message: "Provide both a contact name and email, or leave both blank.",
   });
 
+const createIndependentMspSchema = z
+  .object({
+    contactEmail: optionalEmail,
+    contactName: optionalName,
+    leadId: z.uuid(),
+    mspName: z.string().trim().min(2).max(120),
+    startDate: z.iso.date(),
+    timezone: z.string().trim().min(1).max(80),
+    website: optionalUrl,
+  })
+  .refine((value) => Boolean(value.contactEmail) === Boolean(value.contactName), {
+    message: "Provide both a contact name and email, or leave both blank.",
+  });
+
 const updateSessionSchema = z.object({
   cohortId: z.uuid(),
   joinUrl: optionalUrl,
@@ -208,6 +222,71 @@ export async function createMspPortal(
   revalidatePath(`/admin/cohorts/${cohort.id}`);
   revalidatePath("/admin");
   return { status: "success", message: `${parsed.data.mspName} is ready. ${result.message}` };
+}
+
+export async function createIndependentMsp(
+  _previousState: AdminActionState,
+  formData: FormData,
+): Promise<AdminActionState> {
+  const inviter = await requireAdminProfile();
+  const parsed = createIndependentMspSchema.safeParse({
+    contactEmail: formData.get("contactEmail"),
+    contactName: formData.get("contactName"),
+    leadId: formData.get("leadId"),
+    mspName: formData.get("mspName"),
+    startDate: formData.get("startDate"),
+    timezone: formData.get("timezone"),
+    website: formData.get("website"),
+  });
+
+  if (!parsed.success) {
+    return {
+      status: "error",
+      message: "Enter the MSP, start date, lead, and optional full website URL. To invite now, include both the contact name and email.",
+    };
+  }
+
+  const supabase = await createServerSupabaseClient();
+  const { data: workspaceRows, error } = await supabase.rpc("create_individual_workspace", {
+    target_lead_id: parsed.data.leadId,
+    target_msp_name: parsed.data.mspName,
+    target_start_date: parsed.data.startDate,
+    target_timezone: parsed.data.timezone,
+    target_website: parsed.data.website ?? "",
+  });
+  const workspace = workspaceRows?.[0];
+
+  if (error || !workspace) {
+    console.error("Independent workspace creation failed", error);
+    return {
+      status: "error",
+      message: error?.code === "23505"
+        ? "An individual workspace for that MSP already exists."
+        : "The independent MSP workspace could not be created.",
+    };
+  }
+
+  if (!parsed.data.contactEmail || !parsed.data.contactName) {
+    revalidatePath("/admin");
+    return { status: "success", message: `${parsed.data.mspName} now has an independent program workspace.` };
+  }
+
+  const result = await sendPortalInvitation({
+    email: parsed.data.contactEmail,
+    fullName: parsed.data.contactName,
+    invitedBy: inviter.id,
+    mspId: workspace.msp_id,
+    redirectTo: `${process.env.APP_URL ?? "http://localhost:3000"}/auth/confirm`,
+    role: "msp_owner",
+  });
+
+  revalidatePath("/admin");
+  return {
+    status: "success",
+    message: result.ok
+      ? `${parsed.data.mspName} now has an independent workspace. ${result.message}`
+      : `${parsed.data.mspName} now has an independent workspace. ${result.message} You can retry the invitation later.`,
+  };
 }
 
 export async function updateGroupSession(

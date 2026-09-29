@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { AppShell } from "@/components/app-shell";
 import { CohortLeadForm } from "@/components/cohort-lead-form";
@@ -42,7 +42,7 @@ export default async function CohortSetupPage({ params }: { params: Promise<{ co
 
   const { data: cohort } = await supabase
     .from("cohorts")
-    .select("id, name, start_date, timezone, lead_id")
+    .select("id, name, start_date, timezone, lead_id, workspace_type")
     .eq("id", cohortId)
     .maybeSingle();
 
@@ -84,6 +84,12 @@ export default async function CohortSetupPage({ params }: { params: Promise<{ co
     id: admin.id,
     label: `${admin.full_name || admin.email}${admin.title ? ` · ${admin.title}` : ""}`,
   }));
+
+  if (cohort.workspace_type === "individual") {
+    const individualMsp = msps?.[0];
+    if (individualMsp) redirect(`/admin/msps/${individualMsp.id}`);
+    redirect("/admin#non-cohort-members");
+  }
 
   const cohortMspIds = new Set((msps ?? []).map((msp) => msp.id));
   const latestInvitation = new Map<string, NonNullable<typeof invitations>[number]>();

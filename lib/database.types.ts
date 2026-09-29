@@ -464,6 +464,7 @@ export type Database = {
           status_override: Database["public"]["Enums"]["cohort_status"] | null
           timezone: string
           updated_at: string
+          workspace_type: string
         }
         Insert: {
           created_at?: string
@@ -477,6 +478,7 @@ export type Database = {
           status_override?: Database["public"]["Enums"]["cohort_status"] | null
           timezone?: string
           updated_at?: string
+          workspace_type?: string
         }
         Update: {
           created_at?: string
@@ -490,6 +492,7 @@ export type Database = {
           status_override?: Database["public"]["Enums"]["cohort_status"] | null
           timezone?: string
           updated_at?: string
+          workspace_type?: string
         }
         Relationships: [
           {
@@ -1218,6 +1221,19 @@ export type Database = {
       cohort_is_writable: {
         Args: { target_cohort_id: string }
         Returns: boolean
+      }
+      create_individual_workspace: {
+        Args: {
+          target_lead_id: string
+          target_msp_name: string
+          target_start_date: string
+          target_timezone: string
+          target_website: string
+        }
+        Returns: {
+          cohort_id: string
+          msp_id: string
+        }[]
       }
       create_one_on_one_session: {
         Args: {

@@ -3,9 +3,10 @@ import { notFound } from "next/navigation";
 
 import { AppShell } from "@/components/app-shell";
 import { MspPreviewBar } from "@/components/msp-views/preview-bar";
+import { RoadmapOverview } from "@/components/roadmap-overview";
 import { SessionTime } from "@/components/session-time";
 import type { CurrentProfile } from "@/lib/auth";
-import { isUuid, mspTasksFilter } from "@/lib/msp-visibility";
+import { isUuid, mspTasksFilter, visibleAssetsFilter } from "@/lib/msp-visibility";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 function formatDateRange(startDate: string) {
@@ -48,16 +49,22 @@ export async function CohortView({ mspId, preview, profile }: CohortViewProps) {
     ? supabase.from("msps").select("id, name, website, logo_path").eq("cohort_id", msp.cohort_id).eq("status", "active").neq("id", msp.id).order("name")
     : supabase.from("cohort_peers").select("id, name, website, logo_path").order("name");
 
-  const [{ data: cohort }, { data: weeks }, { data: sessions }, { data: progress }, { data: leadRow }, { data: peers }, { data: tasks }, { data: hidden }, { data: completions }, { data: cohortStatus }] = await Promise.all([
-    supabase.from("cohorts").select("id, name, start_date, timezone").eq("id", msp.cohort_id).single(),
-    supabase.from("cohort_weeks").select("id, week_number, title, subtitle, goal").eq("cohort_id", msp.cohort_id).order("week_number"),
+  const [{ data: cohort }, { data: weeks }, { data: sessions }, { data: progress }, { data: leadRow }, { data: peers }, { data: tasks }, { data: hidden }, { data: completions }, { data: assets }, { data: cohortStatus }] = await Promise.all([
+    supabase.from("cohorts").select("id, name, start_date, timezone, workspace_type").eq("id", msp.cohort_id).single(),
+    supabase.from("cohort_weeks").select("id, week_number, title, subtitle, goal, template_week_id").eq("cohort_id", msp.cohort_id).order("week_number"),
     supabase.from("sessions").select("id, title, starts_at, join_url, week_number").eq("cohort_id", msp.cohort_id).eq("kind", "group").order("starts_at"),
     supabase.from("msp_progress").select("*").eq("msp_id", msp.id).order("week_number"),
     leadQuery,
     peersQuery,
-    supabase.from("cohort_tasks").select("id, cohort_week_id").eq("cohort_id", msp.cohort_id).is("archived_at", null).or(mspTasksFilter(msp.id)),
+    supabase.from("cohort_tasks").select("id, cohort_week_id, template_task_id, position, title, description, owner_label, owner_type, kind").eq("cohort_id", msp.cohort_id).is("archived_at", null).or(mspTasksFilter(msp.id)).order("position"),
     supabase.from("msp_hidden_tasks").select("cohort_task_id").eq("msp_id", msp.id),
     supabase.from("task_completions").select("cohort_task_id").eq("msp_id", msp.id),
+    supabase
+      .from("assets")
+      .select("id, title, kind, external_url, program_week_id, program_task_id, cohort_week_id, cohort_task_id")
+      .eq("status", "ready")
+      .or(visibleAssetsFilter(msp.cohort_id, msp.id))
+      .order("created_at"),
     supabase.rpc("effective_cohort_status", { target_cohort_id: msp.cohort_id }),
   ]);
 
@@ -80,27 +87,40 @@ export async function CohortView({ mspId, preview, profile }: CohortViewProps) {
     ? undefined
     : sessions?.find((session) => (session.week_number ?? 0) >= displayWeek);
   const overallPercent = progress?.[0]?.overall_percent ?? 0;
+  const isIndividual = cohort.workspace_type === "individual";
 
   return (
-    <AppShell activeNav={preview ? "cohorts" : "cohort"} eyebrow={msp.name} profile={profile} title={cohort.name}>
+    <AppShell activeNav={preview ? "cohorts" : "cohort"} eyebrow={msp.name} profile={profile} title={isIndividual ? "Your growth roadmap" : cohort.name}>
       {preview ? <MspPreviewBar active="cohort" mspId={msp.id} mspName={msp.name} /> : null}
       <div className={`${preview ? "" : "-mt-5 "}mb-8 flex flex-wrap items-center gap-3 text-sm text-muted`}>
-        <span>{formatDateRange(cohort.start_date)}</span>
+        <span>{isIndividual ? `Independent program · Started ${new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${cohort.start_date}T00:00:00Z`))}` : formatDateRange(cohort.start_date)}</span>
         <span className="text-line">·</span>
-        <span>{isEnded || currentWeek > 4 ? "Cohort complete" : currentWeek === 0 ? "Starts soon" : `Week ${currentWeek} of 4`}</span>
+        <span>{isEnded || currentWeek > 4 ? "Program complete" : currentWeek === 0 ? "Starts soon" : `${isIndividual ? "Stage" : "Week"} ${currentWeek} of 4`}</span>
       </div>
 
-      <section className="overflow-hidden rounded-xl bg-dark-evergreen text-white shadow-[0_22px_60px_rgba(15,36,24,0.17)]">
+      <RoadmapOverview
+        assets={assets ?? []}
+        completedTaskIds={(completions ?? []).map((completion) => completion.cohort_task_id)}
+        currentWeek={currentWeek}
+        mode={isIndividual ? "individual" : "cohort"}
+        mspId={msp.id}
+        preview={preview}
+        progress={progress ?? []}
+        tasks={visibleTasks}
+        weeks={weeks ?? []}
+      />
+
+      <section className="mt-8 overflow-hidden rounded-xl bg-dark-evergreen text-white shadow-[0_22px_60px_rgba(15,36,24,0.17)]">
         <div className="grid lg:grid-cols-[1.15fr_0.85fr]">
           <div className="p-6 sm:p-8 lg:p-10">
             <p className="text-sm font-bold uppercase tracking-[0.18em] text-[#E7A16D]">
-              {isEnded || currentWeek > 4 ? "Cohort complete" : currentWeek === 0 ? "First up" : `This week · Week ${currentWeek}`}
+              {isEnded || currentWeek > 4 ? "Program complete" : currentWeek === 0 ? "First up" : `Current focus · ${isIndividual ? "Stage" : "Week"} ${currentWeek}`}
             </p>
             <h2 className="mt-4 font-serif text-4xl font-bold">{week?.title ?? "Your cohort program"}</h2>
             <p className="mt-2 text-lg text-white/75">{week?.subtitle}</p>
             <p className="mt-6 max-w-2xl text-base leading-7 text-white/85">{week?.goal}</p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link className="min-h-11 rounded-md bg-white px-5 py-3 font-semibold text-dark-evergreen transition hover:bg-sage" href="/checklist">
+              <Link className="min-h-11 rounded-md bg-white px-5 py-3 font-semibold text-dark-evergreen transition hover:bg-sage" href={preview ? `/admin/msps/${msp.id}/preview/checklist` : "/checklist"}>
                 Open checklist
               </Link>
               <span className="flex min-h-11 items-center rounded-md border border-white/20 px-4 text-sm text-white/75">
@@ -117,8 +137,13 @@ export async function CohortView({ mspId, preview, profile }: CohortViewProps) {
               <div className="h-full rounded-full bg-[#E7A16D]" style={{ width: `${overallPercent}%` }} />
             </div>
             <div className="mt-8 border-t border-white/10 pt-7">
-              <p className="text-sm font-bold uppercase tracking-[0.16em] text-[#E7A16D]">Next session</p>
-              {nextSession ? (
+              <p className="text-sm font-bold uppercase tracking-[0.16em] text-[#E7A16D]">{isIndividual ? "How it works" : "Next session"}</p>
+              {isIndividual ? (
+                <>
+                  <h3 className="mt-3 font-serif text-2xl font-bold">Move at your pace</h3>
+                  <p className="mt-2 leading-6 text-white/75">Use the roadmap above and work directly with your Lemhi lead. There are no cohort sessions or peer-company visibility.</p>
+                </>
+              ) : nextSession ? (
                 <>
                   <h3 className="mt-3 font-serif text-2xl font-bold">{nextSession.title}</h3>
                   <p className="mt-2 text-white/75"><SessionTime startsAt={nextSession.starts_at} /></p>
@@ -134,8 +159,8 @@ export async function CohortView({ mspId, preview, profile }: CohortViewProps) {
         </div>
       </section>
 
-      <div className="mt-8 grid gap-8 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
-        <section className="rounded-xl border border-line bg-paper p-6 sm:p-8">
+      <div className={`mt-8 grid gap-8 ${isIndividual ? "xl:grid-cols-1" : "xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]"}`}>
+        {!isIndividual ? <section className="rounded-xl border border-line bg-paper p-6 sm:p-8">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="text-sm font-bold uppercase tracking-[0.16em] text-accent-orange">Four-week schedule</p>
@@ -165,9 +190,9 @@ export async function CohortView({ mspId, preview, profile }: CohortViewProps) {
               );
             })}
           </div>
-        </section>
+        </section> : null}
 
-        <div className="space-y-8">
+        <div className={`space-y-8 ${isIndividual ? "max-w-2xl" : ""}`}>
           <section className="rounded-xl border border-line bg-paper p-6 sm:p-8">
             <p className="text-sm font-bold uppercase tracking-[0.16em] text-accent-orange">Your Lemhi lead</p>
             {lead ? (
@@ -184,7 +209,7 @@ export async function CohortView({ mspId, preview, profile }: CohortViewProps) {
             ) : <p className="mt-4 text-base text-muted">Your cohort lead will appear here once assigned.</p>}
           </section>
 
-          <section className="rounded-xl border border-line bg-paper p-6 sm:p-8">
+          {!isIndividual ? <section className="rounded-xl border border-line bg-paper p-6 sm:p-8">
             <p className="text-sm font-bold uppercase tracking-[0.16em] text-accent-orange">In your cohort</p>
             <h2 className="mt-3 font-serif text-3xl font-bold text-dark-evergreen">Peer companies</h2>
             <div className="mt-5 space-y-3">
@@ -203,7 +228,7 @@ export async function CohortView({ mspId, preview, profile }: CohortViewProps) {
                 </div>
               )) : <p className="text-base text-muted">Other cohort companies will appear here as they join.</p>}
             </div>
-          </section>
+          </section> : null}
         </div>
       </div>
     </AppShell>

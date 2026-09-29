@@ -2,13 +2,14 @@ import Link from "next/link";
 
 import { AppShell } from "@/components/app-shell";
 import { CohortCreateForm } from "@/components/cohort-create-form";
+import { IndependentMspForm } from "@/components/independent-msp-form";
 import { SessionTime } from "@/components/session-time";
 import { requireAdminProfile } from "@/lib/auth";
 import type { Enums } from "@/lib/database.types";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Cohort setup" };
+export const metadata = { title: "Workspaces" };
 
 function nextMonday() {
   const date = new Date();
@@ -42,7 +43,7 @@ export default async function AdminPage() {
   ] = await Promise.all([
     supabase
       .from("cohorts")
-      .select("id, name, start_date, timezone, lead_id, status_override")
+      .select("id, name, start_date, timezone, lead_id, status_override, workspace_type")
       .order("start_date", { ascending: false }),
     supabase
       .from("profiles")
@@ -86,11 +87,13 @@ export default async function AdminPage() {
   })));
   const adminNames = new Map((admins ?? []).map((admin) => [admin.id, admin.full_name || admin.email]));
   const cohortNames = new Map((cohorts ?? []).map((cohort) => [cohort.id, cohort.name]));
+  const workspaceTypes = new Map((cohorts ?? []).map((cohort) => [cohort.id, cohort.workspace_type]));
   const mspCounts = new Map<string, number>();
   for (const msp of msps ?? []) {
     if (msp.status === "active") mspCounts.set(msp.cohort_id, (mspCounts.get(msp.cohort_id) ?? 0) + 1);
   }
   const activeMsps = (msps ?? []).filter((msp) => msp.status === "active");
+  const independentMsps = activeMsps.filter((msp) => workspaceTypes.get(msp.cohort_id) === "individual");
   const ownerByMsp = new Map((owners ?? []).filter((owner) => owner.msp_id).map((owner) => [owner.msp_id as string, owner]));
   const progressByMsp = new Map<string, NonNullable<typeof progress>[number]>();
   for (const item of progress ?? []) {
@@ -106,7 +109,7 @@ export default async function AdminPage() {
     .filter((task) => task.cohort_id && cohortTimes.get(task.cohort_id)?.status === "active")
     .slice(0, 6);
   const cohortCards = (cohorts ?? [])
-    .filter((cohort) => cohortTimes.get(cohort.id)?.status !== "ended")
+    .filter((cohort) => cohort.workspace_type === "cohort" && cohortTimes.get(cohort.id)?.status !== "ended")
     .map((cohort) => {
       const cohortMsps = activeMsps.filter((msp) => msp.cohort_id === cohort.id);
       const done = cohortMsps.reduce((sum, msp) => sum + (progressByMsp.get(msp.id)?.overall_completed_tasks ?? 0), 0);
@@ -130,16 +133,23 @@ export default async function AdminPage() {
       || (leftProgress?.overall_percent ?? 0) - (rightProgress?.overall_percent ?? 0)
       || left.name.localeCompare(right.name);
   });
+  const cohortWorkspaces = (cohorts ?? []).filter((cohort) => cohort.workspace_type === "cohort");
+  const independentMembers = independentMsps.map((msp) => ({
+    cohort: (cohorts ?? []).find((cohort) => cohort.id === msp.cohort_id),
+    msp,
+    owner: ownerByMsp.get(msp.id),
+    progress: progressByMsp.get(msp.id),
+  }));
 
   return (
-    <AppShell activeNav="cohorts" eyebrow="Admin" profile={profile} title="Cohort setup">
+    <AppShell activeNav="cohorts" eyebrow="Admin" profile={profile} title="Workspaces">
       <section className="mb-8 rounded-xl border border-line bg-paper p-6 shadow-[0_18px_50px_rgba(18,19,15,0.06)] sm:p-8">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-sm font-bold uppercase tracking-[0.16em] text-accent-orange">Cohort pulse</p>
             <h2 className="mt-3 font-serif text-3xl font-bold text-dark-evergreen">What needs attention</h2>
           </div>
-          <p className="text-sm text-muted">All active MSPs across every cohort</p>
+          <p className="text-sm text-muted">All active MSPs across cohorts and individual programs</p>
         </div>
 
         <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -167,10 +177,10 @@ export default async function AdminPage() {
                   <Link className="grid gap-3 py-4 first:pt-0 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center" href={`/admin/msps/${msp.id}`} key={msp.id}>
                     <div className="min-w-0">
                       <p className="font-semibold text-dark-evergreen hover:text-evergreen">{msp.name}</p>
-                      <p className="mt-1 truncate text-sm text-muted">{cohortNames.get(msp.cohort_id) ?? "Cohort"} · {owner?.full_name || owner?.email || "No owner account"}</p>
+                      <p className="mt-1 truncate text-sm text-muted">{workspaceTypes.get(msp.cohort_id) === "individual" ? "Non-cohort member" : cohortNames.get(msp.cohort_id) ?? "Cohort"} · {owner?.full_name || owner?.email || "No owner account"}</p>
                     </div>
                     <span className={`w-fit rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wide ${mspProgress?.is_behind ? "bg-[#F7E4D6] text-[#6B3216]" : "bg-sage text-dark-evergreen"}`}>
-                      {mspProgress?.is_behind ? "Behind" : `Week ${mspProgress?.current_week ?? 0}`}
+                      {mspProgress?.is_behind ? "Behind" : `${workspaceTypes.get(msp.cohort_id) === "individual" ? "Stage" : "Week"} ${mspProgress?.current_week ?? 0}`}
                     </span>
                     <span className="text-sm font-semibold text-evergreen">{mspProgress?.overall_percent ?? 0}% →</span>
                   </Link>
@@ -259,16 +269,36 @@ export default async function AdminPage() {
           <div className="flex items-end justify-between gap-4">
             <div>
               <p className="text-sm font-bold uppercase tracking-[0.16em] text-accent-orange">Workspace</p>
-              <h2 className="mt-3 font-serif text-3xl font-bold text-dark-evergreen">Cohorts</h2>
+              <h2 className="mt-3 font-serif text-3xl font-bold text-dark-evergreen">Programs</h2>
             </div>
             <span className="rounded-full bg-sage px-3 py-1 text-sm font-semibold text-dark-evergreen">
-              {cohorts?.length ?? 0} total
+              {cohortWorkspaces.length + 1} areas
             </span>
           </div>
 
           <div className="mt-6 space-y-3">
-            {cohorts?.length ? (
-              cohorts.map((cohort) => {
+            <a
+              className="group block rounded-lg border-2 border-evergreen/30 bg-sage/55 p-5 transition hover:-translate-y-0.5 hover:border-evergreen hover:shadow-[0_14px_30px_rgba(18,19,15,0.07)]"
+              href="#non-cohort-members"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-accent-orange">Individual programs</p>
+                  <h3 className="mt-1 font-serif text-2xl font-bold text-dark-evergreen group-hover:text-evergreen">Non-cohort members</h3>
+                  <p className="mt-2 text-sm text-muted">Private, one-company roadmaps without cohort sessions or peer visibility.</p>
+                </div>
+                <span className="rounded-full bg-evergreen px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">
+                  {independentMsps.length} MSP{independentMsps.length === 1 ? "" : "s"}
+                </span>
+              </div>
+              <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2 border-t border-evergreen/20 pt-4 text-sm text-muted">
+                <span><strong className="text-dark-evergreen">{independentMsps.length}</strong> active individual portals</span>
+                <span className="ml-auto font-semibold text-evergreen">Manage members ↓</span>
+              </div>
+            </a>
+
+            {cohortWorkspaces.length ? (
+              cohortWorkspaces.map((cohort) => {
                 const status = cohortTimes.get(cohort.id)?.status ?? "upcoming";
                 return (
                   <Link
@@ -306,6 +336,57 @@ export default async function AdminPage() {
           </div>
         </section>
       </div>
+
+      <section className="mt-8 scroll-mt-6 rounded-xl border border-line bg-paper p-6 shadow-[0_18px_50px_rgba(18,19,15,0.06)] sm:p-8" id="non-cohort-members">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-sm font-bold uppercase tracking-[0.16em] text-accent-orange">Individual programs</p>
+            <h2 className="mt-3 font-serif text-3xl font-bold text-dark-evergreen">Non-cohort members</h2>
+            <p className="mt-3 max-w-3xl text-base leading-7 text-muted">
+              Each MSP receives a completely isolated program workspace, its own start date, and the same roadmap and library without being exposed to cohort peers or group calls.
+            </p>
+          </div>
+          <span className="rounded-full bg-sage px-3 py-1 text-sm font-semibold text-dark-evergreen">
+            {independentMembers.length} active
+          </span>
+        </div>
+
+        <div className="mt-8 grid gap-8 xl:grid-cols-[minmax(0,0.95fr)_minmax(420px,1.05fr)]">
+          <div>
+            <h3 className="font-serif text-2xl font-bold text-dark-evergreen">Add an individual MSP</h3>
+            <p className="mt-2 text-sm leading-6 text-muted">Choose when its personal four-stage roadmap begins. A main-contact invitation can be sent now or added later.</p>
+            <div className="mt-6">
+              <IndependentMspForm admins={admins ?? []} defaultLeadId={profile.id} defaultStartDate={new Date().toISOString().slice(0, 10)} />
+            </div>
+          </div>
+
+          <div>
+            <h3 className="font-serif text-2xl font-bold text-dark-evergreen">Member workspaces</h3>
+            <div className="mt-4 divide-y divide-line">
+              {independentMembers.length ? independentMembers.map(({ cohort, msp, owner, progress: mspProgress }) => (
+                <Link className="grid gap-3 py-4 first:pt-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center" href={`/admin/msps/${msp.id}`} key={msp.id}>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-dark-evergreen hover:text-evergreen">{msp.name}</p>
+                    <p className="mt-1 truncate text-sm text-muted">
+                      {owner?.full_name || owner?.email || "No owner account"}
+                      {cohort ? ` · Started ${new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${cohort.start_date}T00:00:00Z`))}` : ""}
+                    </p>
+                  </div>
+                  <div className="text-left sm:text-right">
+                    <p className="font-serif text-2xl font-bold text-dark-evergreen">{mspProgress?.overall_percent ?? 0}%</p>
+                    <p className="text-xs font-bold uppercase tracking-wide text-evergreen">Open dashboard →</p>
+                  </div>
+                </Link>
+              )) : (
+                <div className="rounded-lg border border-dashed border-line px-5 py-10 text-center">
+                  <p className="font-serif text-2xl font-bold text-dark-evergreen">No individual members yet</p>
+                  <p className="mt-2 text-sm text-muted">Use the form to create the first private non-cohort workspace.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
     </AppShell>
   );
 }

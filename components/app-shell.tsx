@@ -14,13 +14,13 @@ type AppShellProps = {
 export function AppShell({ activeNav, children, eyebrow, profile, title }: AppShellProps) {
   const isAdmin = profile.role === "lemhi_admin";
   const mspNav = [
-    { href: "/cohort", id: "cohort" as const, label: "Cohort" },
+    { href: "/cohort", id: "cohort" as const, label: "Roadmap" },
     { href: "/checklist", id: "checklist" as const, label: "Checklist" },
     { href: "/library", id: "library" as const, label: "Library" },
     ...(profile.role === "msp_owner" ? [{ href: "/team", id: "team" as const, label: "Team" }] : []),
   ];
   const adminNav = [
-    { href: "/admin", id: "cohorts" as const, label: "Cohorts" },
+    { href: "/admin", id: "cohorts" as const, label: "Workspaces" },
     { href: "/admin/recordings", id: "admin-recordings" as const, label: "Recordings" },
     { href: "/admin/library", id: "admin-library" as const, label: "Library" },
     { href: "/admin/program", id: "admin-program" as const, label: "Program" },
@@ -35,7 +35,7 @@ export function AppShell({ activeNav, children, eyebrow, profile, title }: AppSh
             <Link
               href={isAdmin ? "/admin" : "/cohort"}
               className="flex shrink-0 items-center gap-3"
-              aria-label="Lemhi Cohort Portal home"
+              aria-label="Lemhi MSP Growth Portal home"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img alt="Lemhi" className="h-9 w-auto sm:h-10" src="/logo-mark-white.png" />
@@ -43,7 +43,7 @@ export function AppShell({ activeNav, children, eyebrow, profile, title }: AppSh
             </Link>
             <div className="border-l border-white/15 pl-4">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#E7A16D]">{eyebrow}</p>
-              <p className="mt-1 font-serif text-lg font-bold">Cohort Portal</p>
+              <p className="mt-1 font-serif text-lg font-bold">MSP Growth Portal</p>
             </div>
           </div>
 

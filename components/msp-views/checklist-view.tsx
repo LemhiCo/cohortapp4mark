@@ -45,7 +45,7 @@ export async function ChecklistView({ mspId, preview, profile }: ChecklistViewPr
   if (!msp) notFound();
 
   const [{ data: cohort }, { data: weeks }, { data: allTasks }, { data: hidden }, { data: completions }, { data: notes }, { data: assets }, { data: progress }, { data: members }, { data: cohortStatus }] = await Promise.all([
-    supabase.from("cohorts").select("id, name").eq("id", msp.cohort_id).single(),
+    supabase.from("cohorts").select("id, name, workspace_type").eq("id", msp.cohort_id).single(),
     supabase.from("cohort_weeks").select("*").eq("cohort_id", msp.cohort_id).order("week_number"),
     supabase.from("cohort_tasks").select("*").eq("cohort_id", msp.cohort_id).is("archived_at", null).or(mspTasksFilter(msp.id)).order("position"),
     supabase.from("msp_hidden_tasks").select("cohort_task_id").eq("msp_id", msp.id),
@@ -64,6 +64,7 @@ export async function ChecklistView({ mspId, preview, profile }: ChecklistViewPr
 
   if (!cohort) notFound();
 
+  const isIndividual = cohort.workspace_type === "individual";
   const hiddenIds = new Set((hidden ?? []).map((row) => row.cohort_task_id));
   const tasks = (allTasks ?? []).filter((task) => !hiddenIds.has(task.id));
   const currentWeek = progress?.[0]?.current_week ?? 0;
@@ -86,9 +87,9 @@ export async function ChecklistView({ mspId, preview, profile }: ChecklistViewPr
     <AppShell activeNav={preview ? "cohorts" : "checklist"} eyebrow={msp.name} profile={profile} title="Checklist">
       {preview ? <MspPreviewBar active="checklist" mspId={msp.id} mspName={msp.name} /> : null}
       <div className={`${preview ? "" : "-mt-5 "}mb-8 flex flex-wrap items-center gap-3 text-sm text-muted`}>
-        <span>{cohort.name}</span>
+        <span>{isIndividual ? "Independent program" : cohort.name}</span>
         <span className="text-line">·</span>
-        <span>{cohortEnded ? "Read-only" : currentWeek === 0 ? "Starts soon" : `Week ${currentWeek} of 4`}</span>
+        <span>{cohortEnded ? "Read-only" : currentWeek === 0 ? "Starts soon" : `${isIndividual ? "Stage" : "Week"} ${currentWeek} of 4`}</span>
       </div>
 
       <section className="rounded-xl border border-line bg-paper p-6 shadow-[0_18px_50px_rgba(18,19,15,0.06)] sm:p-8">
@@ -108,7 +109,7 @@ export async function ChecklistView({ mspId, preview, profile }: ChecklistViewPr
                 className={`rounded-full px-3 py-1.5 font-semibold ${item.week_number === displayWeek ? "bg-dark-evergreen text-white" : "bg-sage text-dark-evergreen"}`}
                 key={item.week_number}
               >
-                W{item.week_number} · {item.week_percent}%
+                {isIndividual ? "S" : "W"}{item.week_number} · {item.week_percent}%
               </span>
             ))}
           </div>
@@ -134,7 +135,7 @@ export async function ChecklistView({ mspId, preview, profile }: ChecklistViewPr
           const isCurrent = week.week_number === displayWeek;
 
           return (
-            <details className="group overflow-hidden rounded-xl border border-line bg-paper" key={week.id} open={isCurrent}>
+            <details className="group scroll-mt-6 overflow-hidden rounded-xl border border-line bg-paper" id={`week-${week.week_number}`} key={week.id} open={isCurrent}>
               <summary className="flex cursor-pointer list-none flex-wrap items-center gap-4 p-5 sm:p-6 [&::-webkit-details-marker]:hidden">
                 <div className={`grid size-12 shrink-0 place-items-center rounded-full font-serif text-xl font-bold ${isCurrent ? "bg-evergreen text-white" : "bg-sage text-dark-evergreen"}`}>
                   {week.week_number}
@@ -142,7 +143,7 @@ export async function ChecklistView({ mspId, preview, profile }: ChecklistViewPr
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className="font-serif text-2xl font-bold text-dark-evergreen">{week.title}</h2>
-                    {isCurrent && currentWeek <= 4 ? <span className="rounded-full bg-[#F7E4D6] px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-[#6B3216]">Current week</span> : null}
+                    {isCurrent && currentWeek <= 4 ? <span className="rounded-full bg-[#F7E4D6] px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-[#6B3216]">Current {isIndividual ? "stage" : "week"}</span> : null}
                     {isPastWithOpenWork ? <span className="rounded-full bg-[#F7E4D6] px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-[#6B3216]">Catch up</span> : null}
                   </div>
                   <p className="mt-1 text-sm text-muted">{week.subtitle}</p>

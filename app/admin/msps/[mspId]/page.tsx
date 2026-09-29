@@ -43,7 +43,7 @@ export default async function AdminMspPage({ params }: { params: Promise<{ mspId
     { data: assets },
     { data: hiddenTasks },
   ] = await Promise.all([
-    supabase.from("cohorts").select("id, name").eq("id", msp.cohort_id).single(),
+    supabase.from("cohorts").select("id, name, workspace_type").eq("id", msp.cohort_id).single(),
     supabase.from("cohort_weeks").select("*").eq("cohort_id", msp.cohort_id).order("week_number"),
     supabase.from("cohort_tasks").select("*").eq("cohort_id", msp.cohort_id).is("archived_at", null).order("position"),
     supabase.from("task_completions").select("*").eq("msp_id", msp.id),
@@ -79,7 +79,9 @@ export default async function AdminMspPage({ params }: { params: Promise<{ mspId
   return (
     <AppShell activeNav="cohorts" eyebrow="Admin · MSP" profile={profile} title={msp.name}>
       <div className="-mt-5 mb-8 flex flex-wrap items-center gap-3 text-sm">
-        <Link className="font-semibold text-evergreen hover:underline" href={`/admin/cohorts/${msp.cohort_id}`}>← {cohort.name}</Link>
+        <Link className="font-semibold text-evergreen hover:underline" href={cohort.workspace_type === "individual" ? "/admin#non-cohort-members" : `/admin/cohorts/${msp.cohort_id}`}>
+          ← {cohort.workspace_type === "individual" ? "Non-cohort members" : cohort.name}
+        </Link>
         <span className="text-line">/</span>
         <span className="capitalize text-muted">{msp.status}</span>
         {msp.website ? <><span className="text-line">·</span><a className="text-evergreen hover:underline" href={msp.website} rel="noreferrer" target="_blank">Website ↗</a></> : null}
