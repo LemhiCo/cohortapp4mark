@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(10);
+select plan(12);
 
 set local role postgres;
 
@@ -71,8 +71,39 @@ select is(
 );
 select is(
   public.cohort_current_week('51000000-0000-4000-8000-000000000001'),
-  4::smallint,
-  'An independent program stays on its final stage instead of ending'
+  1::smallint,
+  'An independent program starts at its first incomplete stage regardless of elapsed time'
+);
+
+insert into public.task_completions (msp_id, cohort_task_id, completed_by)
+select
+  '52000000-0000-4000-8000-000000000001',
+  task.id,
+  'aa000000-0000-4000-8000-000000000001'
+from public.cohort_tasks task
+join public.cohort_weeks week on week.id = task.cohort_week_id
+where task.cohort_id = '51000000-0000-4000-8000-000000000001'
+  and week.week_number = 1;
+
+select is(
+  public.cohort_current_week('51000000-0000-4000-8000-000000000001'),
+  2::smallint,
+  'Completing every requirement in the current stage advances an independent program'
+);
+
+insert into public.task_completions (msp_id, cohort_task_id, completed_by)
+select
+  '52000000-0000-4000-8000-000000000001',
+  task.id,
+  'aa000000-0000-4000-8000-000000000001'
+from public.cohort_tasks task
+where task.cohort_id = '51000000-0000-4000-8000-000000000001'
+on conflict do nothing;
+
+select is(
+  public.cohort_current_week('51000000-0000-4000-8000-000000000001'),
+  5::smallint,
+  'An independent program reports complete after every visible requirement is done'
 );
 select throws_ok(
   $$

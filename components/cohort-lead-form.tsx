@@ -23,7 +23,7 @@ export function CohortLeadForm({ cohortId, leadId, leads }: CohortLeadFormProps)
     <form action={action} className="flex flex-wrap items-end gap-3">
       <input type="hidden" name="cohortId" value={cohortId} />
       <label className="min-w-64 flex-1 space-y-2 text-sm font-semibold text-dark-evergreen">
-        <span>Cohort lead</span>
+        <span>Lemhi lead</span>
         <select className={fieldClass} defaultValue={current} name="leadId" required>
           {current ? null : <option disabled value="">Choose a lead</option>}
           {leads.map((lead) => (

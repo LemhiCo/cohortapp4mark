@@ -79,8 +79,8 @@ export default async function AdminMspPage({ params }: { params: Promise<{ mspId
   return (
     <AppShell activeNav="cohorts" eyebrow="Admin · MSP" profile={profile} title={msp.name}>
       <div className="-mt-5 mb-8 flex flex-wrap items-center gap-3 text-sm">
-        <Link className="font-semibold text-evergreen hover:underline" href={cohort.workspace_type === "individual" ? "/admin#non-cohort-members" : `/admin/cohorts/${msp.cohort_id}`}>
-          ← {cohort.workspace_type === "individual" ? "Non-cohort members" : cohort.name}
+        <Link className="font-semibold text-evergreen hover:underline" href={cohort.workspace_type === "individual" ? "/admin?view=individual" : `/admin/cohorts/${msp.cohort_id}`}>
+          ← {cohort.workspace_type === "individual" ? "Individual members" : cohort.name}
         </Link>
         <span className="text-line">/</span>
         <span className="capitalize text-muted">{msp.status}</span>

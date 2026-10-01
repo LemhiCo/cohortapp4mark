@@ -89,7 +89,7 @@ export async function addTaskNote(
     msp_id: profile.msp_id,
   });
 
-  if (error) return { status: "error", message: "Notes are read-only after the cohort ends." };
+  if (error) return { status: "error", message: "Notes are read-only after the program ends." };
   revalidatePath("/checklist");
   return { status: "success", message: "Note posted." };
 }

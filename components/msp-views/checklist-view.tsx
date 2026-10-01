@@ -121,7 +121,9 @@ export async function ChecklistView({ mspId, preview, profile }: ChecklistViewPr
         ) : null}
         {cohortEnded ? (
           <p className="mt-5 rounded-md bg-sage px-4 py-3 text-sm font-semibold text-dark-evergreen">
-            This cohort has ended. Your checklist and notes remain available to review.
+            {isIndividual
+              ? "You completed this program. Your checklist and notes remain available to review."
+              : "This cohort has ended. Your checklist and notes remain available to review."}
           </p>
         ) : null}
       </section>

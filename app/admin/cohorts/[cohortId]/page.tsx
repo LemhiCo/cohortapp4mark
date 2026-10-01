@@ -88,7 +88,7 @@ export default async function CohortSetupPage({ params }: { params: Promise<{ co
   if (cohort.workspace_type === "individual") {
     const individualMsp = msps?.[0];
     if (individualMsp) redirect(`/admin/msps/${individualMsp.id}`);
-    redirect("/admin#non-cohort-members");
+    redirect("/admin?view=individual");
   }
 
   const cohortMspIds = new Set((msps ?? []).map((msp) => msp.id));

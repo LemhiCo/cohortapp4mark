@@ -111,6 +111,18 @@ export function RoadmapOverview({
             const isSelected = week.week_number === selectedWeek.week_number;
             const isComplete = (weekProgress?.week_percent ?? 0) === 100;
             const isCurrent = week.week_number === currentWeek;
+            const remaining = Math.max(
+              0,
+              (weekProgress?.week_total_tasks ?? tasks.filter((task) => task.cohort_week_id === week.id).length)
+                - (weekProgress?.week_completed_tasks ?? 0),
+            );
+            const statusLabel = isComplete
+              ? "Complete"
+              : isCurrent
+                ? `${remaining} remaining`
+                : week.week_number > currentWeek || currentWeek === 0
+                  ? "Not started"
+                  : `${remaining} remaining`;
             return (
               <button
                 aria-pressed={isSelected}
@@ -134,6 +146,9 @@ export function RoadmapOverview({
                     {isCurrent ? " · Now" : ""}
                   </span>
                   <span className="mt-1 block font-semibold leading-5 text-dark-evergreen">{week.title}</span>
+                  <span className={`mt-1 block text-xs font-semibold ${isComplete ? "text-evergreen" : isCurrent ? "text-accent-orange" : "text-muted"}`}>
+                    {statusLabel}
+                  </span>
                 </span>
               </button>
             );

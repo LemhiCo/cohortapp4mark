@@ -24,9 +24,15 @@ const statusStyles: Record<Enums<"cohort_status">, string> = {
   upcoming: "bg-[#F7E4D6] text-[#6B3216]",
 };
 
-export default async function AdminPage() {
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string }>;
+}) {
   const profile = await requireAdminProfile();
   const supabase = await createServerSupabaseClient();
+  const { view } = await searchParams;
+  const workspaceView = view === "individual" ? "individual" : "cohorts";
 
   const now = new Date();
   const sevenDaysAgo = new Date(now);
@@ -146,7 +152,7 @@ export default async function AdminPage() {
       <section className="mb-8 rounded-xl border border-line bg-paper p-6 shadow-[0_18px_50px_rgba(18,19,15,0.06)] sm:p-8">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-sm font-bold uppercase tracking-[0.16em] text-accent-orange">Cohort pulse</p>
+            <p className="text-sm font-bold uppercase tracking-[0.16em] text-accent-orange">Program pulse</p>
             <h2 className="mt-3 font-serif text-3xl font-bold text-dark-evergreen">What needs attention</h2>
           </div>
           <p className="text-sm text-muted">All active MSPs across cohorts and individual programs</p>
@@ -177,7 +183,7 @@ export default async function AdminPage() {
                   <Link className="grid gap-3 py-4 first:pt-0 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center" href={`/admin/msps/${msp.id}`} key={msp.id}>
                     <div className="min-w-0">
                       <p className="font-semibold text-dark-evergreen hover:text-evergreen">{msp.name}</p>
-                      <p className="mt-1 truncate text-sm text-muted">{workspaceTypes.get(msp.cohort_id) === "individual" ? "Non-cohort member" : cohortNames.get(msp.cohort_id) ?? "Cohort"} · {owner?.full_name || owner?.email || "No owner account"}</p>
+                      <p className="mt-1 truncate text-sm text-muted">{workspaceTypes.get(msp.cohort_id) === "individual" ? "Individual program" : cohortNames.get(msp.cohort_id) ?? "Cohort"} · {owner?.full_name || owner?.email || "No owner account"}</p>
                     </div>
                     <span className={`w-fit rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wide ${mspProgress?.is_behind ? "bg-[#F7E4D6] text-[#6B3216]" : "bg-sage text-dark-evergreen"}`}>
                       {mspProgress?.is_behind ? "Behind" : `${workspaceTypes.get(msp.cohort_id) === "individual" ? "Stage" : "Week"} ${mspProgress?.current_week ?? 0}`}
@@ -253,71 +259,55 @@ export default async function AdminPage() {
         ) : null}
       </section>
 
-      <div className="grid gap-8 xl:grid-cols-[minmax(0,0.92fr)_minmax(460px,1.08fr)]">
-        <section className="rounded-xl border border-line bg-paper p-6 shadow-[0_18px_50px_rgba(18,19,15,0.06)] sm:p-8">
-          <p className="text-sm font-bold uppercase tracking-[0.16em] text-accent-orange">New cohort</p>
-          <h2 className="mt-3 font-serif text-3xl font-bold text-dark-evergreen">Set the program cadence</h2>
-          <p className="mt-3 max-w-2xl text-base leading-7 text-muted">
-            Start with the schedule. The portal generates the full four-week program, then takes you straight to session and MSP setup.
-          </p>
-          <div className="mt-7">
-            <CohortCreateForm admins={admins ?? []} defaultLeadId={profile.id} defaultStartDate={nextMonday()} />
-          </div>
-        </section>
+      <nav aria-label="Workspace type" className="mb-8 flex w-fit rounded-lg border border-line bg-paper p-1 shadow-[0_10px_28px_rgba(18,19,15,0.04)]">
+        <Link
+          aria-current={workspaceView === "cohorts" ? "page" : undefined}
+          className={`rounded-md px-4 py-2.5 text-sm font-semibold transition ${workspaceView === "cohorts" ? "bg-dark-evergreen text-white" : "text-muted hover:bg-sage hover:text-dark-evergreen"}`}
+          href="/admin?view=cohorts"
+        >
+          Cohorts <span className="ml-1 opacity-70">{cohortWorkspaces.length}</span>
+        </Link>
+        <Link
+          aria-current={workspaceView === "individual" ? "page" : undefined}
+          className={`rounded-md px-4 py-2.5 text-sm font-semibold transition ${workspaceView === "individual" ? "bg-dark-evergreen text-white" : "text-muted hover:bg-sage hover:text-dark-evergreen"}`}
+          href="/admin?view=individual"
+        >
+          Individual members <span className="ml-1 opacity-70">{independentMembers.length}</span>
+        </Link>
+      </nav>
 
-        <section className="rounded-xl border border-line bg-paper p-6 sm:p-8">
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <p className="text-sm font-bold uppercase tracking-[0.16em] text-accent-orange">Workspace</p>
-              <h2 className="mt-3 font-serif text-3xl font-bold text-dark-evergreen">Programs</h2>
+      {workspaceView === "cohorts" ? (
+        <div className="grid gap-8 xl:grid-cols-[minmax(0,0.92fr)_minmax(460px,1.08fr)]">
+          <section className="rounded-xl border border-line bg-paper p-6 shadow-[0_18px_50px_rgba(18,19,15,0.06)] sm:p-8">
+            <p className="text-sm font-bold uppercase tracking-[0.16em] text-accent-orange">New cohort</p>
+            <h2 className="mt-3 font-serif text-3xl font-bold text-dark-evergreen">Set the program cadence</h2>
+            <p className="mt-3 max-w-2xl text-base leading-7 text-muted">
+              Start with the schedule. The portal generates the full four-week program, then takes you straight to session and MSP setup.
+            </p>
+            <div className="mt-7">
+              <CohortCreateForm admins={admins ?? []} defaultLeadId={profile.id} defaultStartDate={nextMonday()} />
             </div>
-            <span className="rounded-full bg-sage px-3 py-1 text-sm font-semibold text-dark-evergreen">
-              {cohortWorkspaces.length + 1} areas
-            </span>
-          </div>
+          </section>
 
-          <div className="mt-6 space-y-3">
-            <a
-              className="group block rounded-lg border-2 border-evergreen/30 bg-sage/55 p-5 transition hover:-translate-y-0.5 hover:border-evergreen hover:shadow-[0_14px_30px_rgba(18,19,15,0.07)]"
-              href="#non-cohort-members"
-            >
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-accent-orange">Individual programs</p>
-                  <h3 className="mt-1 font-serif text-2xl font-bold text-dark-evergreen group-hover:text-evergreen">Non-cohort members</h3>
-                  <p className="mt-2 text-sm text-muted">Private, one-company roadmaps without cohort sessions or peer visibility.</p>
-                </div>
-                <span className="rounded-full bg-evergreen px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">
-                  {independentMsps.length} MSP{independentMsps.length === 1 ? "" : "s"}
-                </span>
+          <section className="rounded-xl border border-line bg-paper p-6 sm:p-8">
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <p className="text-sm font-bold uppercase tracking-[0.16em] text-accent-orange">Cohort programs</p>
+                <h2 className="mt-3 font-serif text-3xl font-bold text-dark-evergreen">Cohort workspaces</h2>
               </div>
-              <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2 border-t border-evergreen/20 pt-4 text-sm text-muted">
-                <span><strong className="text-dark-evergreen">{independentMsps.length}</strong> active individual portals</span>
-                <span className="ml-auto font-semibold text-evergreen">Manage members ↓</span>
-              </div>
-            </a>
-
-            {cohortWorkspaces.length ? (
-              cohortWorkspaces.map((cohort) => {
+              <span className="rounded-full bg-sage px-3 py-1 text-sm font-semibold text-dark-evergreen">{cohortWorkspaces.length} total</span>
+            </div>
+            <div className="mt-6 space-y-3">
+              {cohortWorkspaces.length ? cohortWorkspaces.map((cohort) => {
                 const status = cohortTimes.get(cohort.id)?.status ?? "upcoming";
                 return (
-                  <Link
-                    className="group block rounded-lg border border-line bg-white/70 p-5 transition hover:-translate-y-0.5 hover:border-evergreen hover:shadow-[0_14px_30px_rgba(18,19,15,0.07)]"
-                    href={`/admin/cohorts/${cohort.id}`}
-                    key={cohort.id}
-                  >
+                  <Link className="group block rounded-lg border border-line bg-white/70 p-5 transition hover:-translate-y-0.5 hover:border-evergreen hover:shadow-[0_14px_30px_rgba(18,19,15,0.07)]" href={`/admin/cohorts/${cohort.id}`} key={cohort.id}>
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div>
-                        <h3 className="font-serif text-2xl font-bold text-dark-evergreen group-hover:text-evergreen">
-                          {cohort.name}
-                        </h3>
-                        <p className="mt-2 text-sm text-muted">
-                          Starts {new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${cohort.start_date}T00:00:00Z`))}
-                        </p>
+                        <h3 className="font-serif text-2xl font-bold text-dark-evergreen group-hover:text-evergreen">{cohort.name}</h3>
+                        <p className="mt-2 text-sm text-muted">Starts {new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${cohort.start_date}T00:00:00Z`))}</p>
                       </div>
-                      <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide ${statusStyles[status]}`}>
-                        {status}
-                      </span>
+                      <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide ${statusStyles[status]}`}>{status}</span>
                     </div>
                     <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2 border-t border-line pt-4 text-sm text-muted">
                       <span><strong className="text-dark-evergreen">{mspCounts.get(cohort.id) ?? 0}</strong> MSP portals</span>
@@ -326,67 +316,65 @@ export default async function AdminPage() {
                     </div>
                   </Link>
                 );
-              })
-            ) : (
-              <div className="rounded-lg border border-dashed border-line px-5 py-10 text-center">
-                <p className="font-serif text-2xl font-bold text-dark-evergreen">No cohorts yet</p>
-                <p className="mt-2 text-base text-muted">Create the first cohort to generate its schedule and checklist.</p>
-              </div>
-            )}
-          </div>
-        </section>
-      </div>
-
-      <section className="mt-8 scroll-mt-6 rounded-xl border border-line bg-paper p-6 shadow-[0_18px_50px_rgba(18,19,15,0.06)] sm:p-8" id="non-cohort-members">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="text-sm font-bold uppercase tracking-[0.16em] text-accent-orange">Individual programs</p>
-            <h2 className="mt-3 font-serif text-3xl font-bold text-dark-evergreen">Non-cohort members</h2>
-            <p className="mt-3 max-w-3xl text-base leading-7 text-muted">
-              Each MSP receives a completely isolated program workspace, its own start date, and the same roadmap and library without being exposed to cohort peers or group calls.
-            </p>
-          </div>
-          <span className="rounded-full bg-sage px-3 py-1 text-sm font-semibold text-dark-evergreen">
-            {independentMembers.length} active
-          </span>
-        </div>
-
-        <div className="mt-8 grid gap-8 xl:grid-cols-[minmax(0,0.95fr)_minmax(420px,1.05fr)]">
-          <div>
-            <h3 className="font-serif text-2xl font-bold text-dark-evergreen">Add an individual MSP</h3>
-            <p className="mt-2 text-sm leading-6 text-muted">Choose when its personal four-stage roadmap begins. A main-contact invitation can be sent now or added later.</p>
-            <div className="mt-6">
-              <IndependentMspForm admins={admins ?? []} defaultLeadId={profile.id} defaultStartDate={new Date().toISOString().slice(0, 10)} />
-            </div>
-          </div>
-
-          <div>
-            <h3 className="font-serif text-2xl font-bold text-dark-evergreen">Member workspaces</h3>
-            <div className="mt-4 divide-y divide-line">
-              {independentMembers.length ? independentMembers.map(({ cohort, msp, owner, progress: mspProgress }) => (
-                <Link className="grid gap-3 py-4 first:pt-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center" href={`/admin/msps/${msp.id}`} key={msp.id}>
-                  <div className="min-w-0">
-                    <p className="font-semibold text-dark-evergreen hover:text-evergreen">{msp.name}</p>
-                    <p className="mt-1 truncate text-sm text-muted">
-                      {owner?.full_name || owner?.email || "No owner account"}
-                      {cohort ? ` · Started ${new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${cohort.start_date}T00:00:00Z`))}` : ""}
-                    </p>
-                  </div>
-                  <div className="text-left sm:text-right">
-                    <p className="font-serif text-2xl font-bold text-dark-evergreen">{mspProgress?.overall_percent ?? 0}%</p>
-                    <p className="text-xs font-bold uppercase tracking-wide text-evergreen">Open dashboard →</p>
-                  </div>
-                </Link>
-              )) : (
+              }) : (
                 <div className="rounded-lg border border-dashed border-line px-5 py-10 text-center">
-                  <p className="font-serif text-2xl font-bold text-dark-evergreen">No individual members yet</p>
-                  <p className="mt-2 text-sm text-muted">Use the form to create the first private non-cohort workspace.</p>
+                  <p className="font-serif text-2xl font-bold text-dark-evergreen">No cohorts yet</p>
+                  <p className="mt-2 text-base text-muted">Create the first cohort to generate its schedule and checklist.</p>
                 </div>
               )}
             </div>
-          </div>
+          </section>
         </div>
-      </section>
+      ) : (
+        <section className="rounded-xl border border-line bg-paper p-6 shadow-[0_18px_50px_rgba(18,19,15,0.06)] sm:p-8">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-sm font-bold uppercase tracking-[0.16em] text-accent-orange">Individual programs</p>
+              <h2 className="mt-3 font-serif text-3xl font-bold text-dark-evergreen">Individual members</h2>
+              <p className="mt-3 max-w-3xl text-base leading-7 text-muted">
+                Each MSP receives an isolated program workspace, its own start date, and the same roadmap and library without cohort peers or group calls.
+              </p>
+            </div>
+            <span className="rounded-full bg-sage px-3 py-1 text-sm font-semibold text-dark-evergreen">{independentMembers.length} active</span>
+          </div>
+
+          <div className="mt-8 grid gap-8 xl:grid-cols-[minmax(0,0.95fr)_minmax(420px,1.05fr)]">
+            <div>
+              <h3 className="font-serif text-2xl font-bold text-dark-evergreen">Add an individual MSP</h3>
+              <p className="mt-2 text-sm leading-6 text-muted">Its roadmap advances as requirements are completed. A main-contact invitation can be sent now or added later.</p>
+              <div className="mt-6">
+                <IndependentMspForm admins={admins ?? []} defaultLeadId={profile.id} defaultStartDate={new Date().toISOString().slice(0, 10)} />
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-serif text-2xl font-bold text-dark-evergreen">Member workspaces</h3>
+              <div className="mt-4 divide-y divide-line">
+                {independentMembers.length ? independentMembers.map(({ cohort, msp, owner, progress: mspProgress }) => (
+                  <Link className="grid gap-3 py-4 first:pt-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center" href={`/admin/msps/${msp.id}`} key={msp.id}>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-dark-evergreen hover:text-evergreen">{msp.name}</p>
+                      <p className="mt-1 truncate text-sm text-muted">
+                        {owner?.full_name || owner?.email || "No owner account"}
+                        {cohort ? ` · Started ${new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${cohort.start_date}T00:00:00Z`))}` : ""}
+                      </p>
+                    </div>
+                    <div className="text-left sm:text-right">
+                      <p className="font-serif text-2xl font-bold text-dark-evergreen">{mspProgress?.overall_percent ?? 0}%</p>
+                      <p className="text-xs font-bold uppercase tracking-wide text-evergreen">Stage {mspProgress?.current_week ?? 0} · Open dashboard →</p>
+                    </div>
+                  </Link>
+                )) : (
+                  <div className="rounded-lg border border-dashed border-line px-5 py-10 text-center">
+                    <p className="font-serif text-2xl font-bold text-dark-evergreen">No individual members yet</p>
+                    <p className="mt-2 text-sm text-muted">Use the form to create the first private individual workspace.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
     </AppShell>
   );
 }

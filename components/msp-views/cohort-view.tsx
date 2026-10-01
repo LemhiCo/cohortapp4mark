@@ -80,13 +80,19 @@ export async function CohortView({ mspId, preview, profile }: CohortViewProps) {
   const isEnded = cohortStatus === "ended";
   const displayWeek = Math.min(4, Math.max(1, currentWeek));
   const week = weeks?.find((item) => item.week_number === displayWeek);
-  const weekTaskIds = new Set(visibleTasks.filter((task) => task.cohort_week_id === week?.id).map((task) => task.id));
   const completedIds = new Set((completions ?? []).map((completion) => completion.cohort_task_id));
-  const openThisWeek = [...weekTaskIds].filter((taskId) => !completedIds.has(taskId)).length;
+  const focusTasks = visibleTasks.filter((task) => task.cohort_week_id === week?.id);
+  const nextTask = focusTasks.find((task) => task.owner_type === "msp" && !completedIds.has(task.id))
+    ?? focusTasks.find((task) => !completedIds.has(task.id));
   const nextSession = isEnded || currentWeek > 4
     ? undefined
     : sessions?.find((session) => (session.week_number ?? 0) >= displayWeek);
   const overallPercent = progress?.[0]?.overall_percent ?? 0;
+  const overallRemaining = Math.max(
+    0,
+    (progress?.[0]?.overall_total_tasks ?? visibleTasks.length)
+      - (progress?.[0]?.overall_completed_tasks ?? completedIds.size),
+  );
   const isIndividual = cohort.workspace_type === "individual";
 
   return (
@@ -110,52 +116,56 @@ export async function CohortView({ mspId, preview, profile }: CohortViewProps) {
         weeks={weeks ?? []}
       />
 
-      <section className="mt-8 overflow-hidden rounded-xl bg-dark-evergreen text-white shadow-[0_22px_60px_rgba(15,36,24,0.17)]">
-        <div className="grid lg:grid-cols-[1.15fr_0.85fr]">
-          <div className="p-6 sm:p-8 lg:p-10">
-            <p className="text-sm font-bold uppercase tracking-[0.18em] text-[#E7A16D]">
-              {isEnded || currentWeek > 4 ? "Program complete" : currentWeek === 0 ? "First up" : `Current focus · ${isIndividual ? "Stage" : "Week"} ${currentWeek}`}
-            </p>
-            <h2 className="mt-4 font-serif text-4xl font-bold">{week?.title ?? "Your cohort program"}</h2>
-            <p className="mt-2 text-lg text-white/75">{week?.subtitle}</p>
-            <p className="mt-6 max-w-2xl text-base leading-7 text-white/85">{week?.goal}</p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link className="min-h-11 rounded-md bg-white px-5 py-3 font-semibold text-dark-evergreen transition hover:bg-sage" href={preview ? `/admin/msps/${msp.id}/preview/checklist` : "/checklist"}>
-                Open checklist
-              </Link>
-              <span className="flex min-h-11 items-center rounded-md border border-white/20 px-4 text-sm text-white/75">
-                {openThisWeek} open this week
-              </span>
+      <section className="mt-8 grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.65fr)]">
+        <div className="rounded-xl border border-line bg-paper p-6 shadow-[0_14px_40px_rgba(18,19,15,0.05)] sm:p-8">
+          <p className="text-sm font-bold uppercase tracking-[0.16em] text-accent-orange">
+            {isEnded || currentWeek > 4 ? "Roadmap complete" : currentWeek === 0 ? "First action" : "Next action"}
+          </p>
+          {nextTask && !isEnded && currentWeek <= 4 ? (
+            <>
+              <h2 className="mt-3 font-serif text-3xl font-bold text-dark-evergreen">{nextTask.title}</h2>
+              <p className="mt-2 max-w-2xl text-base leading-7 text-muted">{nextTask.description}</p>
+              <div className="mt-5 flex flex-wrap items-center gap-3">
+                <Link className="min-h-11 rounded-md bg-dark-evergreen px-5 py-3 font-semibold text-white transition hover:bg-evergreen" href={preview ? `/admin/msps/${msp.id}/preview/checklist#week-${displayWeek}` : `/checklist#week-${displayWeek}`}>
+                  Go to this task →
+                </Link>
+                <span className="rounded-full bg-sage px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-dark-evergreen">
+                  {nextTask.owner_type === "msp" ? "Your team" : "Lemhi"}
+                </span>
+              </div>
+            </>
+          ) : (
+            <>
+              <h2 className="mt-3 font-serif text-3xl font-bold text-dark-evergreen">You have completed the program roadmap.</h2>
+              <p className="mt-2 text-base leading-7 text-muted">Your checklist and resources remain available whenever you need them.</p>
+            </>
+          )}
+          {!isIndividual && nextSession && !isEnded ? (
+            <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-line pt-5 text-sm">
+              <span className="font-bold uppercase tracking-wide text-accent-orange">Next session</span>
+              <span className="font-semibold text-dark-evergreen">{nextSession.title}</span>
+              <span className="text-muted"><SessionTime startsAt={nextSession.starts_at} /></span>
+              {nextSession.join_url
+                ? <a className="font-semibold text-evergreen hover:underline" href={nextSession.join_url} rel="noreferrer" target="_blank">Join ↗</a>
+                : <span className="font-semibold text-muted">Link coming this week</span>}
             </div>
+          ) : null}
+        </div>
+
+        <div className="rounded-xl border border-line bg-dark-evergreen p-6 text-white shadow-[0_14px_40px_rgba(15,36,24,0.12)] sm:p-8">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-white/70">Overall progress</p>
+              <p className="mt-1 text-sm text-white/55">{overallRemaining ? `${overallRemaining} requirement${overallRemaining === 1 ? "" : "s"} remaining` : "All requirements complete"}</p>
+            </div>
+            <span className="font-serif text-4xl font-bold">{overallPercent}%</span>
           </div>
-          <div className="border-t border-white/10 bg-white/5 p-6 sm:p-8 lg:border-l lg:border-t-0 lg:p-10">
-            <div className="flex items-center justify-between gap-4">
-              <span className="text-sm font-semibold text-white/70">Overall progress</span>
-              <span className="font-serif text-3xl font-bold">{overallPercent}%</span>
-            </div>
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/15">
-              <div className="h-full rounded-full bg-[#E7A16D]" style={{ width: `${overallPercent}%` }} />
-            </div>
-            <div className="mt-8 border-t border-white/10 pt-7">
-              <p className="text-sm font-bold uppercase tracking-[0.16em] text-[#E7A16D]">{isIndividual ? "How it works" : "Next session"}</p>
-              {isIndividual ? (
-                <>
-                  <h3 className="mt-3 font-serif text-2xl font-bold">Move at your pace</h3>
-                  <p className="mt-2 leading-6 text-white/75">Use the roadmap above and work directly with your Lemhi lead. There are no cohort sessions or peer-company visibility.</p>
-                </>
-              ) : nextSession ? (
-                <>
-                  <h3 className="mt-3 font-serif text-2xl font-bold">{nextSession.title}</h3>
-                  <p className="mt-2 text-white/75"><SessionTime startsAt={nextSession.starts_at} /></p>
-                  {nextSession.join_url ? (
-                    <a className="mt-5 inline-flex min-h-11 items-center rounded-md border border-white/30 px-4 font-semibold hover:bg-white/10" href={nextSession.join_url} target="_blank" rel="noreferrer">
-                      Join session ↗
-                    </a>
-                  ) : <p className="mt-4 text-sm text-white/55">Link coming this week</p>}
-                </>
-              ) : <p className="mt-3 text-white/65">All scheduled sessions are complete.</p>}
-            </div>
+          <div className="mt-5 h-2.5 overflow-hidden rounded-full bg-white/15">
+            <div className="h-full rounded-full bg-[#E7A16D]" style={{ width: `${overallPercent}%` }} />
           </div>
+          <p className="mt-5 text-sm leading-6 text-white/70">
+            {isIndividual ? "Complete the current stage to move your active focus to the next one." : "Your roadmap stays aligned with the four-week program schedule."}
+          </p>
         </div>
       </section>
 
@@ -202,11 +212,11 @@ export async function CohortView({ mspId, preview, profile }: CohortViewProps) {
                 </div>
                 <div className="min-w-0">
                   <h2 className="font-serif text-2xl font-bold text-dark-evergreen">{lead.full_name || "Your Lemhi lead"}</h2>
-                  <p className="mt-1 text-sm text-muted">{lead.title || "Cohort lead"}</p>
+                  <p className="mt-1 text-sm text-muted">{lead.title || "Lemhi lead"}</p>
                   {lead.email ? <a className="mt-2 block truncate text-sm font-semibold text-evergreen hover:underline" href={`mailto:${lead.email}`}>{lead.email}</a> : null}
                 </div>
               </div>
-            ) : <p className="mt-4 text-base text-muted">Your cohort lead will appear here once assigned.</p>}
+            ) : <p className="mt-4 text-base text-muted">Your Lemhi lead will appear here once assigned.</p>}
           </section>
 
           {!isIndividual ? <section className="rounded-xl border border-line bg-paper p-6 sm:p-8">

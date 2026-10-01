@@ -97,7 +97,7 @@ test.describe("cohort lead", () => {
     await signIn(page, firstLead, /\/admin$/);
     await page.goto(`/admin/cohorts/${created.cohortId}`);
 
-    const picker = page.getByLabel("Cohort lead");
+    const picker = page.getByLabel("Lemhi lead");
     const leadForm = page.locator("form").filter({ has: picker });
     await expect(picker).toHaveValue(firstLead.userId!);
     await expect(picker.locator(`option[value="${secondLead.userId}"]`)).toHaveText(`${names.second} · ${names.secondTitle}`);

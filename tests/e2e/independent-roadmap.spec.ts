@@ -59,7 +59,9 @@ test.describe("independent MSP roadmap", () => {
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
     await expect(page).toHaveURL(/\/admin$/);
 
-    const section = page.locator("#non-cohort-members");
+    await page.getByRole("link", { name: /Individual members/ }).click();
+    await expect(page).toHaveURL(/\/admin\?view=individual$/);
+    const section = page.locator("section").filter({ has: page.getByRole("heading", { name: "Individual members" }) });
     await section.getByLabel("MSP name").fill(mspName);
     await section.getByRole("button", { name: "Add non-cohort member" }).click();
     await expect(section.getByRole("status")).toContainText(`${mspName} now has an independent program workspace.`);
@@ -96,6 +98,7 @@ test.describe("independent MSP roadmap", () => {
     await expect(page.getByRole("link", { name: new RegExp(assetTitle) })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Peer companies" })).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Sessions" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /Stage 1/ })).toContainText("7 remaining");
 
     await page.getByRole("button", { name: /Stage 2/ }).click();
     await expect(page.getByText(/Stage 2 · 0% complete/)).toBeVisible();
