@@ -23,6 +23,16 @@ To take a link down, clear **Join link** and **Save**; MSPs see “Link coming t
 
 **Cohorts** → open the cohort → **Lemhi lead**. Pick someone in **Cohort lead** and click **Save lead**. MSPs see the new lead’s name, title, and email on their Cohort page straight away. Anyone with a Lemhi admin login can be chosen; to add someone to the list, ask Felipe for their admin login.
 
+## Create an MSP and send its access link
+
+1. **Cohorts** → open the cohort → **Step 2 · MSP access**.
+2. Enter the MSP name, website, and main contact. Click **Create portal**. This saves the workspace but does not email anyone.
+3. Finish the roster and review the sessions, roadmap, and files. A card marked **Ready to invite** has a saved contact but no access email yet.
+4. Click **Send setup link** on that MSP's card and confirm the recipient. Do this separately for each MSP only when its workspace is ready.
+5. The card shows **Setup link sent** until the contact creates their password, then **Access active**. If the first link expires, wait at least one minute and use **Resend setup link**.
+
+To add or correct a contact before sending, open **MSP dashboard**, edit **Main contact** and **Main-contact email**, then **Save settings**. An active owner's email cannot be silently replaced; ask Felipe to transfer or deactivate the account.
+
 ## Check one MSP and work its checklist
 
 Open the MSP from **MSP progress** or from the cohort’s **MSP portals** list.
@@ -86,7 +96,7 @@ Tasks can’t be reordered or moved to another week yet; ask Felipe.
 
 ## Ask Felipe for
 
-- New MSP logins, password resets, and extra teammates.
+- Account transfers, deactivated-owner recovery, or invitation-email delivery problems. Active users can use **Forgot your password?** on the sign-in page.
 - New Lemhi admin logins, for example someone else to lead a cohort.
 - Changing a cohort’s name or start date.
 - Reordering tasks or moving one to another week.

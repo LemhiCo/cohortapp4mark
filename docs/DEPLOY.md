@@ -39,7 +39,9 @@ The password-free demo walkthrough has been removed. A leftover `DEMO_LOGIN_ENAB
 - [ ] `npm run lint`, `npm run typecheck`, `npm run test:e2e`, and `npm run build` pass.
 - [ ] `npm run test:db` passes every RLS isolation test.
 - [ ] All 19 starter assets are ready and visible in an external MSP account.
-- [ ] Custom SMTP delivers an invitation and a requested sign-in link to a real non-Lemhi email.
+- [ ] Custom SMTP delivers an MSP setup link and a forgot-password link to a real non-Lemhi email.
+- [ ] Mark can create an MSP without sending email, then send that MSP's setup link from its admin card.
+- [ ] The recipient must create a password before any MSP route or private file opens.
 - [ ] An MSP owner can invite and remove a teammate.
 - [ ] MSP A cannot see MSP B's people, notes, completions, or private assets.
 - [ ] A real PDF previews and downloads through a short-lived URL.

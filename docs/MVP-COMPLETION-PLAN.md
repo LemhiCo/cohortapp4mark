@@ -1,6 +1,6 @@
 # Lemhi Cohort Portal — MVP Completion Plan
 
-**Last updated:** 2026-09-28  
+**Last updated:** 2026-10-02
 **Production portal:** <https://cohortapp4mark.vercel.app>  
 **Source repository:** <https://github.com/LemhiCo/cohortapp4mark>  
 **Product requirements:** [`docs/PRD.md`](./PRD.md)  
@@ -13,6 +13,20 @@
 This is the implementation and handoff guide from the current live prototype to the minimum viable product that Mark can use with the first MSP cohort.
 
 It is deliberately operational. If development stops, continue at the first unchecked release-blocking item, verify its acceptance criteria, update this document, and then move to the next item.
+
+### Approved account workflow — 2026-10-02
+
+The target MVP no longer distributes fixed temporary passwords to new MSPs. The earlier temporary-password sections below remain as launch history for the four already-provisioned prototype accounts.
+
+1. Mark creates every MSP workspace in a cohort. A workspace can be saved as a draft without a contact, or with the main contact's name and email.
+2. Creating a workspace never sends email. Mark reviews the roster, content, schedule, and assets first.
+3. When one workspace is ready, Mark clicks **Send setup link** for that MSP. Links are sent individually, never as a cohort-wide batch.
+4. The main contact follows the emailed link and creates a password of at least 12 characters. Until this is complete, that identity cannot open portal routes or files.
+5. The main contact can then sign in with email and password and sees only their assigned MSP. Mark retains the cross-MSP admin view.
+6. **Resend setup link** issues a fresh link for an unfinished account, with a one-minute send throttle. **Forgot your password?** sends the same secure password-creation flow without revealing whether an email is registered.
+7. Mark may edit the saved contact before access is sent. Once an owner account is active, changing its email requires an explicit account-transfer/deactivation workflow rather than silently moving access.
+
+Implementation: `codex/msp-invite-password-flow` at `cd47c1a`. Before production use, merge the branch, apply `20261002000000_msp_invitation_password_setup.sql`, configure custom SMTP, allow the production `/auth/confirm` URL in Supabase Auth, and complete a real external-email setup/reset test.
 
 The MVP is complete when:
 
