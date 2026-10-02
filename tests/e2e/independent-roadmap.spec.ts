@@ -64,7 +64,7 @@ test.describe("independent MSP roadmap", () => {
     const section = page.locator("section").filter({ has: page.getByRole("heading", { name: "Individual members" }) });
     await section.getByLabel("MSP name").fill(mspName);
     await section.getByRole("button", { name: "Add non-cohort member" }).click();
-    await expect(section.getByRole("status")).toContainText(`${mspName} now has an independent program workspace.`);
+    await expect(section.getByRole("status")).toContainText(`${mspName} now has a draft independent workspace.`);
 
     const cohort = await admin!.from("cohorts").select("id, workspace_type").eq("name", `${mspName} — Individual`).single();
     if (cohort.error) throw cohort.error;

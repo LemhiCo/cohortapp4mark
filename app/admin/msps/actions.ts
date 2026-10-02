@@ -18,12 +18,26 @@ const optionalUrl = z.preprocess(
   (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
   z.url().optional(),
 );
-const settingsSchema = z.object({
-  mspId: z.uuid(),
-  name: z.string().trim().min(2).max(120),
-  status: z.enum(["active", "deactivated"]),
-  website: optionalUrl,
-});
+const optionalEmail = z.preprocess(
+  (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+  z.email().transform((value) => value.trim().toLowerCase()).optional(),
+);
+const optionalName = z.preprocess(
+  (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+  z.string().trim().min(2).max(120).optional(),
+);
+const settingsSchema = z
+  .object({
+    contactEmail: optionalEmail,
+    contactName: optionalName,
+    mspId: z.uuid(),
+    name: z.string().trim().min(2).max(120),
+    status: z.enum(["active", "deactivated"]),
+    website: optionalUrl,
+  })
+  .refine((value) => Boolean(value.contactEmail) === Boolean(value.contactName), {
+    message: "Provide both a contact name and email, or leave both blank.",
+  });
 
 async function validateTask(mspId: string, taskId: string) {
   const supabase = await createServerSupabaseClient();
@@ -98,6 +112,8 @@ export async function updateMspSettings(
 ): Promise<AdminMspActionState> {
   await requireAdminProfile();
   const parsed = settingsSchema.safeParse({
+    contactEmail: formData.get("contactEmail"),
+    contactName: formData.get("contactName"),
     mspId: formData.get("mspId"),
     name: formData.get("name"),
     status: formData.get("status"),
@@ -105,14 +121,31 @@ export async function updateMspSettings(
   });
 
   if (!parsed.success) {
-    return { status: "error", message: "Enter an MSP name and an optional full website URL." };
+    return { status: "error", message: "Enter valid company details and include both main-contact fields or neither." };
   }
 
   const supabase = await createServerSupabaseClient();
+  const { data: owner } = await supabase
+    .from("profiles")
+    .select("email")
+    .eq("msp_id", parsed.data.mspId)
+    .eq("role", "msp_owner")
+    .eq("active", true)
+    .maybeSingle();
+
+  if (owner && owner.email.toLowerCase() !== parsed.data.contactEmail?.toLowerCase()) {
+    return {
+      status: "error",
+      message: "The active owner’s email cannot be changed here. Deactivate or transfer that account first.",
+    };
+  }
+
   const { error } = await supabase
     .from("msps")
     .update({
       name: parsed.data.name,
+      primary_contact_email: parsed.data.contactEmail ?? null,
+      primary_contact_name: parsed.data.contactName ?? null,
       status: parsed.data.status,
       website: parsed.data.website ?? null,
     })
@@ -120,7 +153,12 @@ export async function updateMspSettings(
 
   if (error) {
     console.error("MSP settings update failed", error);
-    return { status: "error", message: "The MSP settings could not be saved." };
+    return {
+      status: "error",
+      message: error.code === "23505"
+        ? "That contact email is already assigned to another MSP."
+        : "The MSP settings could not be saved.",
+    };
   }
 
   revalidatePath(`/admin/msps/${parsed.data.mspId}`);

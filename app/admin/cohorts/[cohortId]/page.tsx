@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { AppShell } from "@/components/app-shell";
 import { CohortLeadForm } from "@/components/cohort-lead-form";
-import { InviteOwnerForm } from "@/components/invite-owner-form";
+import { MspInvitationControl } from "@/components/msp-invitation-control";
 import { MspPortalForm } from "@/components/msp-portal-form";
 import { LogoUploadForm } from "@/components/logo-upload-form";
 import { SessionEditor } from "@/components/session-editor";
@@ -57,17 +57,17 @@ export default async function CohortSetupPage({ params }: { params: Promise<{ co
       .order("week_number"),
     supabase
       .from("msps")
-      .select("id, name, website, logo_path, status")
+      .select("id, name, website, logo_path, status, primary_contact_email, primary_contact_name")
       .eq("cohort_id", cohort.id)
       .order("name"),
     supabase
       .from("invitations")
-      .select("email, msp_id, status, created_at")
+      .select("email, msp_id, status, created_at, expires_at, last_sent_at")
       .eq("role", "msp_owner")
       .order("created_at", { ascending: false }),
     supabase
       .from("profiles")
-      .select("email, full_name, msp_id, active")
+      .select("email, full_name, msp_id, active, password_setup_required")
       .eq("role", "msp_owner"),
     supabase
       .from("cohort_tasks")
@@ -99,9 +99,6 @@ export default async function CohortSetupPage({ params }: { params: Promise<{ co
     }
   }
   const ownerByMsp = new Map((owners ?? []).filter((owner) => owner.msp_id).map((owner) => [owner.msp_id as string, owner]));
-  const portalsAwaitingOwner = (msps ?? [])
-    .filter((msp) => !ownerByMsp.has(msp.id) && latestInvitation.get(msp.id)?.status !== "pending")
-    .map((msp) => ({ id: msp.id, name: msp.name }));
   const tzLabel = timezoneLabel(cohort.timezone);
 
   return (
@@ -157,7 +154,7 @@ export default async function CohortSetupPage({ params }: { params: Promise<{ co
           <p className="text-sm font-bold uppercase tracking-[0.16em] text-accent-orange">Step 2 · MSP access</p>
           <h2 className="mt-3 font-serif text-3xl font-bold text-dark-evergreen">Create a portal</h2>
           <p className="mt-3 text-base leading-7 text-muted">
-            Each MSP gets one portal. Its main contact receives an email invite and can add teammates after signing in.
+            Add every MSP and review the cohort first. No email is sent until you choose Send setup link in the roster.
           </p>
           <div className="mt-7">
             <MspPortalForm cohortId={cohort.id} />
@@ -180,6 +177,13 @@ export default async function CohortSetupPage({ params }: { params: Promise<{ co
               msps.map((msp) => {
                 const owner = ownerByMsp.get(msp.id);
                 const invitation = latestInvitation.get(msp.id);
+                const accessState = owner?.active && !owner.password_setup_required
+                  ? "active"
+                  : invitation?.status === "pending"
+                    ? "invited"
+                    : msp.primary_contact_email && msp.primary_contact_name
+                      ? "ready"
+                      : "draft";
                 return (
                   <div className="py-5 first:pt-0" key={msp.id}>
                     <div className="flex items-start justify-between gap-4">
@@ -196,15 +200,24 @@ export default async function CohortSetupPage({ params }: { params: Promise<{ co
                       </span>
                     </div>
                     <div className="mt-4 rounded-md bg-background px-4 py-3 text-sm">
-                      <p className="font-semibold text-dark-evergreen">{owner?.full_name || invitation?.email || "Main contact"}</p>
-                      <p className="mt-1 text-muted">{owner?.email ?? invitation?.email ?? "No invite sent"}</p>
+                      <p className="font-semibold text-dark-evergreen">{owner?.full_name || msp.primary_contact_name || "Main contact not added"}</p>
+                      <p className="mt-1 text-muted">{owner?.email ?? msp.primary_contact_email ?? "Add a name and email before sending access"}</p>
                       <p className="mt-2 text-xs font-bold uppercase tracking-wide text-accent-orange">
-                        {owner?.active && invitation?.status === "accepted"
+                        {accessState === "active"
                           ? "Access active"
-                          : invitation
-                            ? `Invite ${invitation.status}`
-                            : "Setup needed"}
+                          : accessState === "invited"
+                            ? "Setup link sent"
+                            : accessState === "ready"
+                              ? "Ready to invite"
+                              : "Draft"}
                       </p>
+                      <MspInvitationControl
+                        contactEmail={msp.primary_contact_email}
+                        contactName={msp.primary_contact_name}
+                        mspId={msp.id}
+                        mspName={msp.name}
+                        state={accessState}
+                      />
                     </div>
                     <LogoUploadForm hasLogo={Boolean(msp.logo_path)} mspId={msp.id} />
                     <Link className="mt-4 inline-flex text-sm font-semibold text-evergreen hover:underline" href={`/admin/msps/${msp.id}`}>
@@ -215,27 +228,13 @@ export default async function CohortSetupPage({ params }: { params: Promise<{ co
               })
             ) : (
               <div className="rounded-lg border border-dashed border-line px-5 py-10 text-center text-base text-muted">
-                No MSP portals yet. Create the first one to send its main contact invite.
+                No MSP portals yet. Create the first one, finish the roster, then send access individually.
               </div>
             )}
           </div>
         </section>
       </div>
 
-      {portalsAwaitingOwner.length ? (
-        <section className="mt-8 rounded-xl border border-line bg-paper p-6 sm:p-8">
-          <div className="max-w-3xl">
-            <p className="text-sm font-bold uppercase tracking-[0.16em] text-accent-orange">Access can come later</p>
-            <h2 className="mt-3 font-serif text-3xl font-bold text-dark-evergreen">Invite a main contact</h2>
-            <p className="mt-3 text-base leading-7 text-muted">
-              Add the portal first, then send access when the contact and email setup are ready.
-            </p>
-          </div>
-          <div className="mt-7 max-w-3xl">
-            <InviteOwnerForm msps={portalsAwaitingOwner} />
-          </div>
-        </section>
-      ) : null}
     </AppShell>
   );
 }

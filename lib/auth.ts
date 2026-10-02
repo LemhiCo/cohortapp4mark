@@ -15,7 +15,7 @@ export function homeForRole(role: CurrentProfile["role"]) {
   return role === "lemhi_admin" ? "/admin" : "/cohort";
 }
 
-export async function getCurrentProfile(): Promise<CurrentProfile | null> {
+export async function getCurrentProfile(options?: { allowPasswordSetup?: boolean }): Promise<CurrentProfile | null> {
   const supabase = await createServerSupabaseClient();
   const {
     data: { user },
@@ -31,6 +31,7 @@ export async function getCurrentProfile(): Promise<CurrentProfile | null> {
     .maybeSingle();
 
   if (profileError || !profile?.active) return null;
+  if (profile.password_setup_required && !options?.allowPasswordSetup) return null;
 
   if (profile.role !== "lemhi_admin") {
     if (!profile.msp_id) return null;
@@ -49,8 +50,9 @@ export async function getCurrentProfile(): Promise<CurrentProfile | null> {
 }
 
 export async function requireProfile() {
-  const profile = await getCurrentProfile();
+  const profile = await getCurrentProfile({ allowPasswordSetup: true });
   if (!profile) redirect("/sign-in");
+  if (profile.password_setup_required) redirect("/set-password");
   return profile;
 }
 

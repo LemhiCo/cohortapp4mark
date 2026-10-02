@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(31);
+select plan(34);
 
 set local role postgres;
 
@@ -150,11 +150,11 @@ where id in (
   '30000000-0000-4000-8000-000000000002'
 );
 
-insert into public.msps (id, cohort_id, name, website)
+insert into public.msps (id, cohort_id, name, website, primary_contact_name, primary_contact_email)
 values
-  ('31000000-0000-4000-8000-000000000001', '30000000-0000-4000-8000-000000000001', 'MSP A', 'https://a.example'),
-  ('31000000-0000-4000-8000-000000000002', '30000000-0000-4000-8000-000000000001', 'MSP B', 'https://b.example'),
-  ('31000000-0000-4000-8000-000000000003', '30000000-0000-4000-8000-000000000002', 'MSP C', 'https://c.example');
+  ('31000000-0000-4000-8000-000000000001', '30000000-0000-4000-8000-000000000001', 'MSP A', 'https://a.example', 'Owner A', 'owner-a@example.com'),
+  ('31000000-0000-4000-8000-000000000002', '30000000-0000-4000-8000-000000000001', 'MSP B', 'https://b.example', 'Owner B', 'owner-b@example.com'),
+  ('31000000-0000-4000-8000-000000000003', '30000000-0000-4000-8000-000000000002', 'MSP C', 'https://c.example', 'Owner C', 'owner-c@example.com');
 
 insert into public.invitations (id, email, role, msp_id, invited_by)
 values
@@ -232,6 +232,30 @@ select is(
   (select status from public.invitations where email = 'owner-a@example.com'),
   'pending'::public.invitation_status,
   'An invited user stays pending until first sign-in'
+);
+
+select is(
+  (select password_setup_required from public.profiles where email = 'owner-a@example.com'),
+  true,
+  'An invited MSP user must create a password before portal access'
+);
+
+select is(
+  (select primary_contact_email::text from public.msps where id = '31000000-0000-4000-8000-000000000001'),
+  'owner-a@example.com',
+  'The MSP stores its main contact before access is sent'
+);
+
+select throws_ok(
+  $$
+    update public.msps
+    set primary_contact_name = 'Duplicate Owner',
+        primary_contact_email = 'owner-a@example.com'
+    where id = '31000000-0000-4000-8000-000000000002'
+  $$,
+  '23505',
+  null,
+  'One main-contact email cannot be assigned to two MSP workspaces'
 );
 
 select throws_ok(

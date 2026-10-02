@@ -1,14 +1,14 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import Link from "next/link";
+import { useActionState } from "react";
 
-import { requestMagicLink, type MagicLinkState } from "./actions";
+import { signIn, type SignInState } from "./actions";
 
-const initialState: MagicLinkState = { status: "idle", message: "" };
+const initialState: SignInState = { status: "idle", message: "" };
 
-export function MagicLinkForm() {
-  const [state, formAction, pending] = useActionState(requestMagicLink, initialState);
-  const [hasPassword, setHasPassword] = useState(false);
+export function SignInForm() {
+  const [state, formAction, pending] = useActionState(signIn, initialState);
 
   return (
     <form action={formAction} className="mt-8 space-y-5">
@@ -29,17 +29,21 @@ export function MagicLinkForm() {
 
       <div className="space-y-2">
         <label htmlFor="password" className="block text-sm font-semibold text-dark-evergreen">
-          Password <span className="font-normal text-muted">(if Lemhi gave you one)</span>
+          Password
         </label>
         <input
           id="password"
           name="password"
           type="password"
           autoComplete="current-password"
-          onChange={(event) => setHasPassword(Boolean(event.target.value))}
-          placeholder="Temporary password"
+          required
           className="min-h-12 w-full rounded-md border border-line bg-white px-4 text-base text-forest-ink shadow-sm placeholder:text-muted/70 focus:border-evergreen focus:outline-none"
         />
+        <div className="text-right">
+          <Link className="text-sm font-semibold text-evergreen hover:underline" href="/forgot-password">
+            Forgot your password?
+          </Link>
+        </div>
       </div>
 
       <button
@@ -47,13 +51,7 @@ export function MagicLinkForm() {
         disabled={pending}
         className="flex min-h-12 w-full items-center justify-center rounded-md bg-evergreen px-5 text-base font-semibold text-white transition hover:bg-dark-evergreen disabled:cursor-wait disabled:opacity-65"
       >
-        {pending
-          ? hasPassword
-            ? "Signing in…"
-            : "Sending secure link…"
-          : hasPassword
-            ? "Sign in"
-            : "Email me a sign-in link"}
+        {pending ? "Signing in…" : "Sign in"}
       </button>
 
       {state.message ? (

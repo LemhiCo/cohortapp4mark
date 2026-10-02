@@ -341,7 +341,7 @@ export default async function AdminPage({
           <div className="mt-8 grid gap-8 xl:grid-cols-[minmax(0,0.95fr)_minmax(420px,1.05fr)]">
             <div>
               <h3 className="font-serif text-2xl font-bold text-dark-evergreen">Add an individual MSP</h3>
-              <p className="mt-2 text-sm leading-6 text-muted">Its roadmap advances as requirements are completed. A main-contact invitation can be sent now or added later.</p>
+              <p className="mt-2 text-sm leading-6 text-muted">Its roadmap advances as requirements are completed. Save the main contact now or later, then send access from the workspace when it is ready.</p>
               <div className="mt-6">
                 <IndependentMspForm admins={admins ?? []} defaultLeadId={profile.id} defaultStartDate={new Date().toISOString().slice(0, 10)} />
               </div>

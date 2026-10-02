@@ -9,22 +9,33 @@ const adminAccount = {
   email: process.env.PLAYWRIGHT_ADMIN_EMAIL,
   password: process.env.PLAYWRIGHT_ADMIN_PASSWORD,
 };
-test("a Lemhi email with a blank password never opens a portal", async ({ page }, testInfo) => {
+test("password is required before sign-in", async ({ page }, testInfo) => {
   await page.goto("/sign-in");
   await expect(page.getByRole("heading", { name: "Sign in to your workspace" })).toBeVisible();
   const projectSlug = testInfo.project.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
   await page.getByLabel("Work email").fill(`no-password-${projectSlug}@lemhi.com`);
-  await page.getByRole("button", { name: "Email me a sign-in link" }).click();
-  await expect(page.getByRole("status")).toContainText("If your invitation is active");
+  await expect(page.getByLabel("Password", { exact: true })).toHaveAttribute("required", "");
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page).toHaveURL(/\/sign-in$/);
 
   await page.goto("/admin");
   await expect(page).toHaveURL(/\/sign-in$/);
 });
 
-for (const path of ["/cohort", "/checklist", "/library", "/team", "/admin"]) {
+test("forgot password returns a non-enumerating response", async ({ page }, testInfo) => {
+  const projectSlug = testInfo.project.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+  await page.goto("/sign-in");
+  await page.getByRole("link", { name: "Forgot your password?" }).click();
+  await expect(page).toHaveURL(/\/forgot-password$/);
+  await page.getByLabel("Work email").fill(`unknown-${projectSlug}@example.test`);
+  await page.getByRole("button", { name: "Send password-reset link" }).click();
+  await expect(page.getByRole("status")).toContainText("If an active account exists");
+});
+
+for (const path of ["/cohort", "/checklist", "/library", "/team", "/admin", "/set-password"]) {
   test(`signed-out visitors cannot open ${path}`, async ({ page }) => {
     await page.goto(path);
-    await expect(page).toHaveURL(/\/sign-in$/);
+    await expect(page).toHaveURL(/\/sign-in(?:\?error=invalid_link)?$/);
   });
 }
 

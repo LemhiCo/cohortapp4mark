@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { z } from "zod";
 
 import { requireMspProfile } from "@/lib/auth";
@@ -33,11 +34,14 @@ export async function inviteTeamMember(
 
   if (!parsed.success) return { status: "error", message: "Enter a name and valid work email." };
 
+  const requestHeaders = await headers();
+  const origin = requestHeaders.get("origin") ?? process.env.APP_URL ?? "http://localhost:3000";
+
   const result = await sendPortalInvitation({
     ...parsed.data,
     invitedBy: inviter.id,
     mspId: inviter.msp_id,
-    redirectTo: `${process.env.APP_URL ?? "http://localhost:3000"}/auth/confirm`,
+    redirectTo: `${origin}/auth/confirm`,
     role: "msp_member",
   });
 

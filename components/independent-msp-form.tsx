@@ -68,7 +68,7 @@ export function IndependentMspForm({ admins, defaultLeadId, defaultStartDate }: 
       </div>
 
       <p className="text-sm leading-6 text-muted">
-        This creates a private one-company workspace with the full roadmap and no cohort sessions or peer list.
+        This creates a private one-company workspace with the full roadmap and no cohort sessions or peer list. No account email is sent until you open the workspace and choose Send setup link.
       </p>
 
       <button

@@ -527,6 +527,7 @@ export type Database = {
           expires_at: string
           id: string
           invited_by: string
+          last_sent_at: string
           msp_id: string
           role: Database["public"]["Enums"]["app_role"]
           status: Database["public"]["Enums"]["invitation_status"]
@@ -540,6 +541,7 @@ export type Database = {
           expires_at?: string
           id?: string
           invited_by: string
+          last_sent_at?: string
           msp_id: string
           role: Database["public"]["Enums"]["app_role"]
           status?: Database["public"]["Enums"]["invitation_status"]
@@ -553,6 +555,7 @@ export type Database = {
           expires_at?: string
           id?: string
           invited_by?: string
+          last_sent_at?: string
           msp_id?: string
           role?: Database["public"]["Enums"]["app_role"]
           status?: Database["public"]["Enums"]["invitation_status"]
@@ -674,6 +677,8 @@ export type Database = {
           id: string
           logo_path: string | null
           name: string
+          primary_contact_email: string | null
+          primary_contact_name: string | null
           status: Database["public"]["Enums"]["msp_status"]
           updated_at: string
           website: string | null
@@ -684,6 +689,8 @@ export type Database = {
           id?: string
           logo_path?: string | null
           name: string
+          primary_contact_email?: string | null
+          primary_contact_name?: string | null
           status?: Database["public"]["Enums"]["msp_status"]
           updated_at?: string
           website?: string | null
@@ -694,6 +701,8 @@ export type Database = {
           id?: string
           logo_path?: string | null
           name?: string
+          primary_contact_email?: string | null
+          primary_contact_name?: string | null
           status?: Database["public"]["Enums"]["msp_status"]
           updated_at?: string
           website?: string | null
@@ -724,6 +733,7 @@ export type Database = {
           id: string
           last_seen_at: string | null
           msp_id: string | null
+          password_setup_required: boolean
           photo_path: string | null
           role: Database["public"]["Enums"]["app_role"]
           title: string | null
@@ -737,6 +747,7 @@ export type Database = {
           id: string
           last_seen_at?: string | null
           msp_id?: string | null
+          password_setup_required?: boolean
           photo_path?: string | null
           role: Database["public"]["Enums"]["app_role"]
           title?: string | null
@@ -750,6 +761,7 @@ export type Database = {
           id?: string
           last_seen_at?: string | null
           msp_id?: string | null
+          password_setup_required?: boolean
           photo_path?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           title?: string | null

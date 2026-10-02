@@ -38,6 +38,10 @@ export function MspPortalForm({ cohortId }: { cohortId: string }) {
         </label>
       </div>
 
+      <p className="text-sm leading-6 text-muted">
+        This only creates the workspace. You will send the account setup email from the roster when the cohort is ready.
+      </p>
+
       <button
         className="min-h-12 rounded-md bg-evergreen px-5 font-semibold text-white transition hover:bg-dark-evergreen disabled:cursor-not-allowed disabled:opacity-50"
         disabled={pending}

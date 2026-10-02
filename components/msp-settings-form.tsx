@@ -8,13 +8,15 @@ const initialState: AdminMspActionState = { status: "idle", message: "" };
 const fieldClass = "min-h-11 w-full rounded-md border border-line bg-white px-3 text-sm shadow-sm focus:border-evergreen focus:outline-none";
 
 type MspSettingsFormProps = {
+  contactEmail: string;
+  contactName: string;
   mspId: string;
   name: string;
   status: "active" | "deactivated";
   website: string;
 };
 
-export function MspSettingsForm({ mspId, name, status, website }: MspSettingsFormProps) {
+export function MspSettingsForm({ contactEmail, contactName, mspId, name, status, website }: MspSettingsFormProps) {
   const [state, formAction, pending] = useActionState(updateMspSettings, initialState);
 
   return (
@@ -27,6 +29,14 @@ export function MspSettingsForm({ mspId, name, status, website }: MspSettingsFor
       <label className="block space-y-2 text-sm font-semibold text-dark-evergreen">
         <span>Website</span>
         <input className={fieldClass} defaultValue={website} name="website" placeholder="https://company.com" type="url" />
+      </label>
+      <label className="block space-y-2 text-sm font-semibold text-dark-evergreen">
+        <span>Main contact</span>
+        <input autoComplete="name" className={fieldClass} defaultValue={contactName} name="contactName" placeholder="Full name" />
+      </label>
+      <label className="block space-y-2 text-sm font-semibold text-dark-evergreen">
+        <span>Main-contact email</span>
+        <input autoComplete="email" className={fieldClass} defaultValue={contactEmail} name="contactEmail" placeholder="name@company.com" type="email" />
       </label>
       <label className="block space-y-2 text-sm font-semibold text-dark-evergreen">
         <span>Access</span>

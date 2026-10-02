@@ -1,18 +1,17 @@
 "use server";
 
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { homeForRole } from "@/lib/auth";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
-export type MagicLinkState = {
+export type SignInState = {
   status: "idle" | "success" | "error";
   message: string;
 };
 
-async function signInWithPassword(email: string, password: string): Promise<MagicLinkState> {
+async function signInWithPassword(email: string, password: string): Promise<SignInState> {
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
@@ -22,7 +21,7 @@ async function signInWithPassword(email: string, password: string): Promise<Magi
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, role, msp_id, active")
+    .select("id, role, msp_id, active, password_setup_required")
     .eq("id", data.user.id)
     .maybeSingle();
 
@@ -30,6 +29,8 @@ async function signInWithPassword(email: string, password: string): Promise<Magi
     await supabase.auth.signOut();
     return { status: "error", message: "This portal access is inactive. Contact your Lemhi lead." };
   }
+
+  if (profile.password_setup_required) redirect("/set-password");
 
   if (profile.msp_id) {
     const { data: msp } = await supabase
@@ -62,10 +63,10 @@ async function signInWithPassword(email: string, password: string): Promise<Magi
   redirect(homeForRole(profile.role));
 }
 
-export async function requestMagicLink(
-  _previousState: MagicLinkState,
+export async function signIn(
+  _previousState: SignInState,
   formData: FormData,
-): Promise<MagicLinkState> {
+): Promise<SignInState> {
   const emailValue = formData.get("email");
   const passwordValue = formData.get("password");
   const email = typeof emailValue === "string" ? emailValue.trim().toLowerCase() : "";
@@ -75,32 +76,6 @@ export async function requestMagicLink(
     return { status: "error", message: "Enter a valid work email address." };
   }
 
-  if (password) return signInWithPassword(email, password);
-
-  try {
-    const requestHeaders = await headers();
-    const origin = process.env.APP_URL ?? requestHeaders.get("origin") ?? "http://localhost:3000";
-    const supabase = await createServerSupabaseClient();
-
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        shouldCreateUser: false,
-        emailRedirectTo: `${origin}/auth/confirm`,
-      },
-    });
-
-    if (error) console.error("Magic-link request rejected", error.message);
-
-    return {
-      status: "success",
-      message: "If your invitation is active, a secure sign-in link is on its way.",
-    };
-  } catch (error) {
-    console.error("Magic-link request failed", error);
-    return {
-      status: "error",
-      message: "Sign-in is not available yet. Please try again shortly.",
-    };
-  }
+  if (!password) return { status: "error", message: "Enter your password to sign in." };
+  return signInWithPassword(email, password);
 }

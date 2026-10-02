@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
@@ -152,7 +153,7 @@ export async function createMspPortal(
   _previousState: AdminActionState,
   formData: FormData,
 ): Promise<AdminActionState> {
-  const inviter = await requireAdminProfile();
+  await requireAdminProfile();
   const parsed = createMspPortalSchema.safeParse({
     cohortId: formData.get("cohortId"),
     contactEmail: formData.get("contactEmail"),
@@ -164,7 +165,7 @@ export async function createMspPortal(
   if (!parsed.success) {
     return {
       status: "error",
-      message: "Enter an MSP name and optional full website URL. To invite now, include both the contact name and a valid email.",
+      message: "Enter an MSP name and optional full website URL. Include both contact fields or leave both blank.",
     };
   }
 
@@ -182,6 +183,8 @@ export async function createMspPortal(
     .insert({
       cohort_id: cohort.id,
       name: parsed.data.mspName,
+      primary_contact_email: parsed.data.contactEmail ?? null,
+      primary_contact_name: parsed.data.contactName ?? null,
       website: parsed.data.website ?? null,
     })
     .select("id")
@@ -195,40 +198,21 @@ export async function createMspPortal(
     };
   }
 
-  if (!parsed.data.contactEmail || !parsed.data.contactName) {
-    revalidatePath(`/admin/cohorts/${cohort.id}`);
-    revalidatePath("/admin");
-    return { status: "success", message: `${parsed.data.mspName} is ready. You can invite its main contact later.` };
-  }
-
-  const result = await sendPortalInvitation({
-    email: parsed.data.contactEmail,
-    fullName: parsed.data.contactName,
-    invitedBy: inviter.id,
-    mspId: msp.id,
-    redirectTo: `${process.env.APP_URL ?? "http://localhost:3000"}/auth/confirm`,
-    role: "msp_owner",
-  });
-
-  if (!result.ok) {
-    revalidatePath(`/admin/cohorts/${cohort.id}`);
-    revalidatePath("/admin");
-    return {
-      status: "success",
-      message: `${parsed.data.mspName} is ready. ${result.message} You can retry the invitation later.`,
-    };
-  }
-
   revalidatePath(`/admin/cohorts/${cohort.id}`);
   revalidatePath("/admin");
-  return { status: "success", message: `${parsed.data.mspName} is ready. ${result.message}` };
+  return {
+    status: "success",
+    message: parsed.data.contactEmail
+      ? `${parsed.data.mspName} is ready. Review the roster, then send its setup link when you choose.`
+      : `${parsed.data.mspName} was added as a draft. Add its main contact before sending access.`,
+  };
 }
 
 export async function createIndependentMsp(
   _previousState: AdminActionState,
   formData: FormData,
 ): Promise<AdminActionState> {
-  const inviter = await requireAdminProfile();
+  await requireAdminProfile();
   const parsed = createIndependentMspSchema.safeParse({
     contactEmail: formData.get("contactEmail"),
     contactName: formData.get("contactName"),
@@ -242,7 +226,7 @@ export async function createIndependentMsp(
   if (!parsed.success) {
     return {
       status: "error",
-      message: "Enter the MSP, start date, lead, and optional full website URL. To invite now, include both the contact name and email.",
+      message: "Enter the MSP, start date, lead, and optional full website URL. Include both contact fields or leave both blank.",
     };
   }
 
@@ -266,27 +250,74 @@ export async function createIndependentMsp(
     };
   }
 
-  if (!parsed.data.contactEmail || !parsed.data.contactName) {
-    revalidatePath("/admin");
-    return { status: "success", message: `${parsed.data.mspName} now has an independent program workspace.` };
-  }
+  if (parsed.data.contactEmail && parsed.data.contactName) {
+    const { error: contactError } = await supabase
+      .from("msps")
+      .update({
+        primary_contact_email: parsed.data.contactEmail,
+        primary_contact_name: parsed.data.contactName,
+      })
+      .eq("id", workspace.msp_id);
 
-  const result = await sendPortalInvitation({
-    email: parsed.data.contactEmail,
-    fullName: parsed.data.contactName,
-    invitedBy: inviter.id,
-    mspId: workspace.msp_id,
-    redirectTo: `${process.env.APP_URL ?? "http://localhost:3000"}/auth/confirm`,
-    role: "msp_owner",
-  });
+    if (contactError) {
+      console.error("Independent workspace contact update failed", contactError);
+      revalidatePath("/admin");
+      return {
+        status: "error",
+        message: `${parsed.data.mspName} was created, but its main contact could not be saved. Open the workspace to finish setup.`,
+      };
+    }
+  }
 
   revalidatePath("/admin");
   return {
     status: "success",
-    message: result.ok
-      ? `${parsed.data.mspName} now has an independent workspace. ${result.message}`
-      : `${parsed.data.mspName} now has an independent workspace. ${result.message} You can retry the invitation later.`,
+    message: parsed.data.contactEmail
+      ? `${parsed.data.mspName} now has an independent workspace. Send its setup link when the workspace is ready.`
+      : `${parsed.data.mspName} now has a draft independent workspace. Add its main contact before sending access.`,
   };
+}
+
+const sendMspSetupLinkSchema = z.object({ mspId: z.uuid() });
+
+export async function sendMspSetupLink(
+  _previousState: InviteActionState,
+  formData: FormData,
+): Promise<InviteActionState> {
+  const inviter = await requireAdminProfile();
+  const parsed = sendMspSetupLinkSchema.safeParse({ mspId: formData.get("mspId") });
+  if (!parsed.success) return { status: "error", message: "That MSP portal could not be found." };
+
+  const admin = createAdminSupabaseClient();
+  const { data: msp } = await admin
+    .from("msps")
+    .select("id, cohort_id, name, primary_contact_email, primary_contact_name, status")
+    .eq("id", parsed.data.mspId)
+    .maybeSingle();
+
+  if (!msp || msp.status !== "active") {
+    return { status: "error", message: "That MSP portal is not active." };
+  }
+  if (!msp.primary_contact_email || !msp.primary_contact_name) {
+    return { status: "error", message: "Add the main contact’s name and email before sending access." };
+  }
+
+  const requestHeaders = await headers();
+  const origin = requestHeaders.get("origin") ?? process.env.APP_URL ?? "http://localhost:3000";
+
+  const result = await sendPortalInvitation({
+    email: msp.primary_contact_email,
+    fullName: msp.primary_contact_name,
+    invitedBy: inviter.id,
+    mspId: msp.id,
+    redirectTo: `${origin}/auth/confirm`,
+    role: "msp_owner",
+  });
+
+  revalidatePath(`/admin/cohorts/${msp.cohort_id}`);
+  revalidatePath(`/admin/msps/${msp.id}`);
+  revalidatePath("/admin");
+  return { status: result.ok ? "success" : "error", message: result.message };
 }
 
 export async function updateGroupSession(
@@ -398,10 +429,13 @@ export async function inviteMspOwner(
 
   if (!msp) return { status: "error", message: "That MSP portal is not active." };
 
+  const requestHeaders = await headers();
+  const origin = requestHeaders.get("origin") ?? process.env.APP_URL ?? "http://localhost:3000";
+
   const result = await sendPortalInvitation({
     ...parsed.data,
     invitedBy: inviter.id,
-    redirectTo: `${process.env.APP_URL ?? "http://localhost:3000"}/auth/confirm`,
+    redirectTo: `${origin}/auth/confirm`,
     role: "msp_owner",
   });
 

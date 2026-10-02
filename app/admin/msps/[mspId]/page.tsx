@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { AdminTaskButton, AdminTaskNoteForm } from "@/components/admin-task-controls";
 import { ExtraTaskForm, HideTaskToggle, RemoveExtraTaskButton } from "@/components/msp-task-customization";
 import { AppShell } from "@/components/app-shell";
+import { MspInvitationControl } from "@/components/msp-invitation-control";
 import { MspSettingsForm } from "@/components/msp-settings-form";
 import { requireAdminProfile } from "@/lib/auth";
 import type { Tables } from "@/lib/database.types";
@@ -25,7 +26,7 @@ export default async function AdminMspPage({ params }: { params: Promise<{ mspId
   const supabase = await createServerSupabaseClient();
   const { data: msp } = await supabase
     .from("msps")
-    .select("id, name, website, status, cohort_id")
+    .select("id, name, website, status, cohort_id, primary_contact_email, primary_contact_name")
     .eq("id", mspId)
     .maybeSingle();
 
@@ -48,8 +49,8 @@ export default async function AdminMspPage({ params }: { params: Promise<{ mspId
     supabase.from("cohort_tasks").select("*").eq("cohort_id", msp.cohort_id).is("archived_at", null).order("position"),
     supabase.from("task_completions").select("*").eq("msp_id", msp.id),
     supabase.from("task_notes").select("*").eq("msp_id", msp.id).order("created_at"),
-    supabase.from("profiles").select("id, email, full_name, role, active").eq("msp_id", msp.id).order("role"),
-    supabase.from("invitations").select("id, email, role, status, created_at").eq("msp_id", msp.id).order("created_at", { ascending: false }),
+    supabase.from("profiles").select("id, email, full_name, role, active, password_setup_required").eq("msp_id", msp.id).order("role"),
+    supabase.from("invitations").select("id, email, role, status, created_at, expires_at, last_sent_at").eq("msp_id", msp.id).order("created_at", { ascending: false }),
     supabase.from("msp_progress").select("*").eq("msp_id", msp.id).order("week_number"),
     supabase.from("assets").select("id, title, category, kind, scope, external_url, cohort_id, msp_id, status").eq("status", "ready").order("created_at", { ascending: false }),
     supabase.from("msp_hidden_tasks").select("cohort_task_id").eq("msp_id", msp.id),
@@ -75,6 +76,15 @@ export default async function AdminMspPage({ params }: { params: Promise<{ mspId
     (asset.scope === "msp" && asset.msp_id === msp.id),
   );
   const overall = progress?.[0];
+  const owner = people?.find((person) => person.role === "msp_owner" && person.active);
+  const pendingOwnerInvitation = invitations?.find((invitation) => invitation.role === "msp_owner" && invitation.status === "pending");
+  const invitationState = owner && !owner.password_setup_required
+    ? "active"
+    : pendingOwnerInvitation
+      ? "invited"
+      : msp.primary_contact_email && msp.primary_contact_name
+        ? "ready"
+        : "draft";
 
   return (
     <AppShell activeNav="cohorts" eyebrow="Admin · MSP" profile={profile} title={msp.name}>
@@ -173,6 +183,8 @@ export default async function AdminMspPage({ params }: { params: Promise<{ mspId
             <h2 className="mt-2 font-serif text-2xl font-bold text-dark-evergreen">MSP portal</h2>
             <p className="mt-2 text-sm leading-6 text-muted">Update company details or deactivate access for everyone at this MSP.</p>
             <MspSettingsForm
+              contactEmail={msp.primary_contact_email ?? ""}
+              contactName={msp.primary_contact_name ?? ""}
               mspId={msp.id}
               name={msp.name}
               status={msp.status}
@@ -186,6 +198,13 @@ export default async function AdminMspPage({ params }: { params: Promise<{ mspId
               {people?.length ? people.map((person) => <div className="py-3 first:pt-0" key={person.id}><div className="flex flex-wrap items-center justify-between gap-2"><p className="font-semibold text-dark-evergreen">{person.full_name || person.email}</p><span className="text-xs font-bold uppercase text-muted">{person.role === "msp_owner" ? "Main contact" : person.active ? "Member" : "Removed"}</span></div><p className="mt-1 break-all text-sm text-muted">{person.email}</p></div>) : <p className="text-sm text-muted">No one has accepted an invitation yet.</p>}
             </div>
             {invitations?.some((invite) => invite.status === "pending") ? <div className="mt-5 border-t border-line pt-5"><h3 className="font-semibold text-dark-evergreen">Pending invitations</h3>{invitations.filter((invite) => invite.status === "pending").map((invite) => <p className="mt-2 break-all text-sm text-muted" key={invite.id}>{invite.email}</p>)}</div> : null}
+            <MspInvitationControl
+              contactEmail={msp.primary_contact_email}
+              contactName={msp.primary_contact_name}
+              mspId={msp.id}
+              mspName={msp.name}
+              state={invitationState}
+            />
           </section>
 
           <section className="rounded-xl border border-line bg-paper p-6">

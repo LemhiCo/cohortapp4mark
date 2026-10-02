@@ -16,63 +16,101 @@ type PortalInvitation = {
 
 export async function sendPortalInvitation(input: PortalInvitation) {
   const admin = createAdminSupabaseClient();
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + 60 * 60 * 1000).toISOString();
 
   const { data: existingProfile } = await admin
     .from("profiles")
-    .select("id, active, msp_id, role")
+    .select("id, active, msp_id, role, password_setup_required")
     .eq("email", input.email)
     .maybeSingle();
 
   if (existingProfile) {
-    if (existingProfile.active) {
-      return { ok: false as const, message: "That email already has portal access." };
+    if (!existingProfile.active) {
+      return { ok: false as const, message: "That account is inactive. Ask a Lemhi admin to reactivate it." };
     }
-    return { ok: false as const, message: "That account is inactive. Ask a Lemhi admin to reactivate it." };
+    if (existingProfile.msp_id !== input.mspId || existingProfile.role !== input.role) {
+      return { ok: false as const, message: "That email is already assigned to another portal." };
+    }
+    if (!existingProfile.password_setup_required) {
+      return { ok: false as const, message: "That contact already has active portal access." };
+    }
   }
 
   const { data: openInvitation } = await admin
     .from("invitations")
-    .select("id, expires_at")
+    .select("id, auth_user_id, last_sent_at")
     .eq("email", input.email)
     .eq("status", "pending")
     .maybeSingle();
 
-  if (openInvitation) {
+  if (openInvitation?.last_sent_at) {
+    const secondsSinceLastSend = (now.getTime() - new Date(openInvitation.last_sent_at).getTime()) / 1000;
+    if (secondsSinceLastSend < 60) {
+      return {
+        ok: false as const,
+        message: "A setup link was sent less than a minute ago. Wait before sending another.",
+      };
+    }
+  }
+
+  let invitation = openInvitation;
+  let createdInvitation = false;
+
+  if (!invitation) {
+    const { data, error } = await admin
+      .from("invitations")
+      .insert({
+        auth_user_id: existingProfile?.id ?? null,
+        email: input.email,
+        expires_at: expiresAt,
+        invited_by: input.invitedBy,
+        last_sent_at: now.toISOString(),
+        msp_id: input.mspId,
+        role: input.role,
+      })
+      .select("id, auth_user_id, last_sent_at")
+      .single();
+
+    if (error || !data) {
+      console.error("Invitation record failed", error);
+      return { ok: false as const, message: "The invitation could not be created." };
+    }
+
+    invitation = data;
+    createdInvitation = true;
+  }
+
+  const redirectTo = `${input.redirectTo}${input.redirectTo.includes("?") ? "&" : "?"}next=/set-password`;
+  const { error: authError } = existingProfile
+    ? await admin.auth.resetPasswordForEmail(input.email, { redirectTo })
+    : await admin.auth.admin.inviteUserByEmail(input.email, {
+      data: { full_name: input.fullName },
+      redirectTo,
+    });
+
+  if (authError) {
+    if (createdInvitation) {
+      await admin
+        .from("invitations")
+        .update({ status: "revoked" })
+        .eq("id", invitation.id);
+    }
+    console.error("Auth invitation failed", authError);
     return {
       ok: false as const,
-      message: "An invitation is already pending. They can also request a fresh sign-in link.",
+      message: "The account setup email could not be sent.",
     };
   }
 
-  const { data: invitation, error: invitationError } = await admin
+  const invitationUpdate = existingProfile
+    ? { auth_user_id: existingProfile.id, expires_at: expiresAt, last_sent_at: now.toISOString() }
+    : { expires_at: expiresAt, last_sent_at: now.toISOString() };
+
+  await admin
     .from("invitations")
-    .insert({
-      email: input.email,
-      invited_by: input.invitedBy,
-      msp_id: input.mspId,
-      role: input.role,
-    })
-    .select("id")
-    .single();
+    .update(invitationUpdate)
+    .eq("id", invitation.id);
 
-  if (invitationError || !invitation) {
-    console.error("Invitation record failed", invitationError);
-    return { ok: false as const, message: "The invitation could not be created." };
-  }
-
-  const { error: authError } = await admin.auth.admin.inviteUserByEmail(input.email, {
-    data: { full_name: input.fullName },
-    redirectTo: input.redirectTo,
-  });
-
-  if (authError) {
-    await admin
-      .from("invitations")
-      .update({ status: "revoked" })
-      .eq("id", invitation.id);
-    console.error("Auth invitation failed", authError);
-    return { ok: false as const, message: "The invitation email could not be sent." };
-  }
-
-  return { ok: true as const, message: `Invitation sent to ${input.email}.` };
+  return { ok: true as const, message: `Account setup link sent to ${input.email}.` };
 }

@@ -1,4 +1,4 @@
-import { MagicLinkForm } from "./magic-link-form";
+import { SignInForm } from "./magic-link-form";
 
 export const metadata = { title: "Sign in" };
 
@@ -49,7 +49,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
             Sign in to your workspace
           </h2>
           <p className="mt-4 text-base leading-7 text-muted">
-            Sign in with your Lemhi portal password, or leave the password blank to receive a secure email link.
+            Sign in with the password you created from your Lemhi account setup email.
           </p>
 
           {error ? (
@@ -60,11 +60,11 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
             </p>
           ) : null}
 
-          <MagicLinkForm />
+          <SignInForm />
 
           <div className="mt-8 border-t border-line pt-6">
             <p className="text-sm leading-6 text-muted">
-              Email links expire for your protection. If a link expires, return here to request another.
+              New to the portal? Ask your Lemhi lead to send your account setup link.
             </p>
           </div>
         </div>
