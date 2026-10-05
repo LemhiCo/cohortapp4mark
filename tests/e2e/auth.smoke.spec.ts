@@ -32,7 +32,7 @@ test("forgot password returns a non-enumerating response", async ({ page }, test
   await expect(page.getByRole("status")).toContainText("If an active account exists");
 });
 
-for (const path of ["/cohort", "/checklist", "/library", "/team", "/admin", "/set-password"]) {
+for (const path of ["/cohort", "/checklist", "/library", "/team", "/admin", "/admin/account", "/set-password"]) {
   test(`signed-out visitors cannot open ${path}`, async ({ page }) => {
     await page.goto(path);
     await expect(page).toHaveURL(/\/sign-in(?:\?error=invalid_link)?$/);
