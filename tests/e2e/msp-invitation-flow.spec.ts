@@ -32,7 +32,7 @@ const mspName = `Invitation MSP ${suffix}`;
 let admin: SupabaseClient | undefined;
 const created: { adminUserId?: string; cohortId?: string; mspId?: string; ownerUserId?: string } = {};
 
-async function setupLinkFor(email: string) {
+async function authLinkFor(email: string) {
   const deadline = Date.now() + 10_000;
   while (Date.now() < deadline) {
     const list = await fetch(`${mailpitUrl}/api/v1/messages`).then((response) => response.json()) as {
@@ -45,8 +45,9 @@ async function setupLinkFor(email: string) {
         Text?: string;
       };
       const body = `${detail.Text ?? ""}\n${detail.HTML ?? ""}`;
-      const match = body.match(/https?:\/\/[^\s"'<>]+\/auth\/v1\/verify[^\s"'<>]+/);
-      if (match) return match[0].replaceAll("&amp;", "&");
+      const links = body.match(/https?:\/\/[^\s"'<>]+/g) ?? [];
+      const match = links.find((link) => link.includes("/auth/v1/verify") || link.includes("/auth/confirm"));
+      if (match) return match.replaceAll("&amp;", "&");
     }
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
@@ -121,10 +122,12 @@ test.describe("MSP invitation and password setup", () => {
     created.ownerUserId = owner!.id;
     expect(owner!.password_setup_required).toBe(true);
 
-    const setupLink = await setupLinkFor(ownerAccount.email);
+    const setupLink = await authLinkFor(ownerAccount.email);
     const ownerContext = await browser.newContext();
     const ownerPage = await ownerContext.newPage();
     await ownerPage.goto(setupLink);
+    const continueButton = ownerPage.getByRole("button", { name: "Continue securely" });
+    if (await continueButton.isVisible()) await continueButton.click();
     await expect(ownerPage).toHaveURL(/\/set-password$/);
 
     await ownerPage.goto("/cohort");
@@ -146,5 +149,28 @@ test.describe("MSP invitation and password setup", () => {
     expect(completedProfile!.password_setup_required).toBe(false);
     expect(acceptedInvite!.status).toBe("accepted");
     await ownerContext.close();
+  });
+
+  test("an existing user can finish a password reset from a scanner-safe link", async ({ page }) => {
+    await page.goto("/forgot-password");
+    await page.getByLabel("Work email").fill(adminAccount.email);
+    await page.getByRole("button", { name: "Send password-reset link" }).click();
+    await expect(page.getByRole("status")).toContainText("password-reset link is on its way");
+
+    const recoveryLink = await authLinkFor(adminAccount.email);
+    await page.goto(recoveryLink);
+    await expect(page.getByRole("heading", { name: "Reset your password" })).toBeVisible();
+
+    // Merely opening the email URL must not consume its one-time token. The
+    // person explicitly confirms before the server exchanges it for a session.
+    await page.reload();
+    await page.getByRole("button", { name: "Continue securely" }).click();
+    await expect(page).toHaveURL(/\/set-password$/);
+
+    const replacementPassword = randomBytes(18).toString("base64url");
+    await page.getByLabel("New password", { exact: true }).fill(replacementPassword);
+    await page.getByLabel("Confirm new password").fill(replacementPassword);
+    await page.getByRole("button", { name: "Save password and continue" }).click();
+    await expect(page).toHaveURL(/\/admin$/);
   });
 });
