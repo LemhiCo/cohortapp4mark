@@ -8,6 +8,7 @@ import { MspInvitationControl } from "@/components/msp-invitation-control";
 import { MspSettingsForm } from "@/components/msp-settings-form";
 import { requireAdminProfile } from "@/lib/auth";
 import type { Tables } from "@/lib/database.types";
+import { invitationHasExpired } from "@/lib/invitations";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -78,8 +79,13 @@ export default async function AdminMspPage({ params }: { params: Promise<{ mspId
   const overall = progress?.[0];
   const owner = people?.find((person) => person.role === "msp_owner" && person.active);
   const pendingOwnerInvitation = invitations?.find((invitation) => invitation.role === "msp_owner" && invitation.status === "pending");
+  const ownerInvitationExpired = pendingOwnerInvitation
+    ? invitationHasExpired(pendingOwnerInvitation.expires_at)
+    : false;
   const invitationState = owner && !owner.password_setup_required
     ? "active"
+    : ownerInvitationExpired
+      ? "expired"
     : pendingOwnerInvitation
       ? "invited"
       : msp.primary_contact_email && msp.primary_contact_name
@@ -201,6 +207,7 @@ export default async function AdminMspPage({ params }: { params: Promise<{ mspId
             <MspInvitationControl
               contactEmail={msp.primary_contact_email}
               contactName={msp.primary_contact_name}
+              expiresAt={pendingOwnerInvitation?.expires_at}
               mspId={msp.id}
               mspName={msp.name}
               state={invitationState}

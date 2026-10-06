@@ -14,10 +14,14 @@ type PortalInvitation = {
   role: InviteRole;
 };
 
+export function invitationHasExpired(expiresAt: string) {
+  return Date.parse(expiresAt) <= Date.now();
+}
+
 export async function sendPortalInvitation(input: PortalInvitation) {
   const admin = createAdminSupabaseClient();
   const now = new Date();
-  const expiresAt = new Date(now.getTime() + 60 * 60 * 1000).toISOString();
+  const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
 
   const { data: existingProfile } = await admin
     .from("profiles")

@@ -115,6 +115,25 @@ test.describe("MSP invitation and password setup", () => {
     await card.getByRole("button", { name: "Send setup link" }).click();
     await expect(card.getByRole("status")).toContainText(`Account setup link sent to ${ownerAccount.email}`);
 
+    const { data: invitation } = await admin!.from("invitations")
+      .select("id, expires_at")
+      .eq("email", ownerAccount.email)
+      .eq("status", "pending")
+      .single();
+    const validityHours = (new Date(invitation!.expires_at).getTime() - Date.now()) / 3_600_000;
+    expect(validityHours).toBeGreaterThan(23.9);
+    expect(validityHours).toBeLessThanOrEqual(24);
+
+    await admin!.from("invitations")
+      .update({ expires_at: new Date(Date.now() - 60_000).toISOString() })
+      .eq("id", invitation!.id);
+    await page.reload();
+    await expect(card.getByText("Setup link expired", { exact: true })).toBeVisible();
+    await expect(card.getByRole("button", { name: "Send new setup link" })).toBeVisible();
+    await admin!.from("invitations")
+      .update({ expires_at: invitation!.expires_at })
+      .eq("id", invitation!.id);
+
     const { data: owner } = await admin!.from("profiles")
       .select("id, password_setup_required")
       .eq("email", ownerAccount.email)

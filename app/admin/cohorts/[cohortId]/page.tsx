@@ -8,6 +8,7 @@ import { MspPortalForm } from "@/components/msp-portal-form";
 import { LogoUploadForm } from "@/components/logo-upload-form";
 import { SessionEditor } from "@/components/session-editor";
 import { requireAdminProfile } from "@/lib/auth";
+import { invitationHasExpired } from "@/lib/invitations";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -177,8 +178,12 @@ export default async function CohortSetupPage({ params }: { params: Promise<{ co
               msps.map((msp) => {
                 const owner = ownerByMsp.get(msp.id);
                 const invitation = latestInvitation.get(msp.id);
+                const invitationExpired = invitation?.status === "pending"
+                  && invitationHasExpired(invitation.expires_at);
                 const accessState = owner?.active && !owner.password_setup_required
                   ? "active"
+                  : invitationExpired
+                    ? "expired"
                   : invitation?.status === "pending"
                     ? "invited"
                     : msp.primary_contact_email && msp.primary_contact_name
@@ -205,6 +210,8 @@ export default async function CohortSetupPage({ params }: { params: Promise<{ co
                       <p className="mt-2 text-xs font-bold uppercase tracking-wide text-accent-orange">
                         {accessState === "active"
                           ? "Access active"
+                          : accessState === "expired"
+                            ? "Setup link expired"
                           : accessState === "invited"
                             ? "Setup link sent"
                             : accessState === "ready"
@@ -214,6 +221,7 @@ export default async function CohortSetupPage({ params }: { params: Promise<{ co
                       <MspInvitationControl
                         contactEmail={msp.primary_contact_email}
                         contactName={msp.primary_contact_name}
+                        expiresAt={invitation?.expires_at}
                         mspId={msp.id}
                         mspName={msp.name}
                         state={accessState}
