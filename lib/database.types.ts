@@ -115,6 +115,63 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_deletion_audit: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          deleted_by: string | null
+          failure_message: string | null
+          id: string
+          owner_email: string
+          reason: string
+          status: string
+          target_id: string
+          target_name: string
+          target_type: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          deleted_by?: string | null
+          failure_message?: string | null
+          id?: string
+          owner_email: string
+          reason: string
+          status?: string
+          target_id: string
+          target_name: string
+          target_type: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          deleted_by?: string | null
+          failure_message?: string | null
+          id?: string
+          owner_email?: string
+          reason?: string
+          status?: string
+          target_id?: string
+          target_name?: string
+          target_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_deletion_audit_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "cohort_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_deletion_audit_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assets: {
         Row: {
           action_items: Json

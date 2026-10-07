@@ -7,6 +7,7 @@ import { MspInvitationControl } from "@/components/msp-invitation-control";
 import { MspPortalForm } from "@/components/msp-portal-form";
 import { LogoUploadForm } from "@/components/logo-upload-form";
 import { SessionEditor } from "@/components/session-editor";
+import { WorkspaceDeletionPanel } from "@/components/workspace-deletion-panel";
 import { requireAdminProfile } from "@/lib/auth";
 import { invitationHasExpired } from "@/lib/invitations";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -242,6 +243,13 @@ export default async function CohortSetupPage({ params }: { params: Promise<{ co
           </div>
         </section>
       </div>
+
+      <WorkspaceDeletionPanel
+        entityId={cohort.id}
+        entityName={cohort.name}
+        managerEmail={profile.email}
+        type="cohort"
+      />
 
     </AppShell>
   );

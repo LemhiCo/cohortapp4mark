@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(34);
+select plan(36);
 
 set local role postgres;
 
@@ -415,6 +415,56 @@ select is(
   (select count(*) from public.assets where id::text like '33000000-%'),
   6::bigint,
   'Lemhi admin reads test assets across all scopes and cohorts'
+);
+
+set local role postgres;
+insert into public.admin_deletion_audit (
+  target_type,
+  target_id,
+  target_name,
+  reason,
+  owner_email,
+  deleted_by,
+  status,
+  completed_at
+)
+values (
+  'msp',
+  '31000000-0000-4000-8000-000000000001',
+  'Audit visibility test',
+  'Created only to prove the audit RLS boundary.',
+  'rls-admin@lemhi.com',
+  'a0000000-0000-4000-8000-000000000001',
+  'completed',
+  now()
+);
+set local role authenticated;
+select set_config(
+  'request.jwt.claims',
+  json_build_object('sub', 'a0000000-0000-4000-8000-000000000001', 'role', 'authenticated')::text,
+  true
+);
+select is(
+  (select count(*) from public.admin_deletion_audit),
+  1::bigint,
+  'Lemhi admin can read the permanent deletion audit'
+);
+
+select set_config(
+  'request.jwt.claims',
+  json_build_object('sub', 'a1000000-0000-4000-8000-000000000001', 'role', 'authenticated')::text,
+  true
+);
+select is(
+  (select count(*) from public.admin_deletion_audit),
+  0::bigint,
+  'MSP users cannot read the deletion audit'
+);
+
+select set_config(
+  'request.jwt.claims',
+  json_build_object('sub', 'a0000000-0000-4000-8000-000000000001', 'role', 'authenticated')::text,
+  true
 );
 
 select lives_ok(

@@ -58,7 +58,7 @@ export function MspInvitationControl({
       {state === "expired" ? (
         <p className="mt-2 text-sm font-semibold text-[#8A431C]">The previous setup link expired. Sending a new one will not recreate the MSP portal.</p>
       ) : state === "invited" && expiryLabel ? (
-        <p className="mt-2 text-sm text-muted" suppressHydrationWarning>Current link expires {expiryLabel}.</p>
+        <p className="mt-2 text-sm text-muted" suppressHydrationWarning>Current link expires {expiryLabel}. You can resend it any time.</p>
       ) : null}
 
       {!canSend ? (

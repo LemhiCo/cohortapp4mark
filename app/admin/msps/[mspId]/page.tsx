@@ -6,6 +6,7 @@ import { ExtraTaskForm, HideTaskToggle, RemoveExtraTaskButton } from "@/componen
 import { AppShell } from "@/components/app-shell";
 import { MspInvitationControl } from "@/components/msp-invitation-control";
 import { MspSettingsForm } from "@/components/msp-settings-form";
+import { WorkspaceDeletionPanel } from "@/components/workspace-deletion-panel";
 import { requireAdminProfile } from "@/lib/auth";
 import type { Tables } from "@/lib/database.types";
 import { invitationHasExpired } from "@/lib/invitations";
@@ -223,6 +224,12 @@ export default async function AdminMspPage({ params }: { params: Promise<{ mspId
           </section>
         </aside>
       </div>
+      <WorkspaceDeletionPanel
+        entityId={msp.id}
+        entityName={msp.name}
+        managerEmail={profile.email}
+        type="msp"
+      />
     </AppShell>
   );
 }
