@@ -1,7 +1,7 @@
 "use client";
 
 import type { EmailOtpType } from "@supabase/supabase-js";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
@@ -16,9 +16,14 @@ const allowedOtpTypes = new Set<EmailOtpType>([
 
 export function AuthConfirmClient() {
   const [failed, setFailed] = useState(false);
+  const confirmationStarted = useRef(false);
 
   useEffect(() => {
-    let active = true;
+    // A PKCE code is single-use. React development checks may invoke effects
+    // twice, so guard the exchange to prevent a successful first request from
+    // racing a second request that reports the code as already consumed.
+    if (confirmationStarted.current) return;
+    confirmationStarted.current = true;
 
     async function confirm() {
       const supabase = createBrowserSupabaseClient();
@@ -52,7 +57,6 @@ export function AuthConfirmClient() {
         error = result.error ?? (result.data.session ? null : new Error("No auth session"));
       }
 
-      if (!active) return;
       if (error) {
         setFailed(true);
         window.location.replace("/sign-in?error=invalid_link");
@@ -63,9 +67,6 @@ export function AuthConfirmClient() {
     }
 
     void confirm();
-    return () => {
-      active = false;
-    };
   }, []);
 
   return (

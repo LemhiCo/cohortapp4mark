@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { requireAdminProfile } from "@/lib/auth";
-import { sendPortalInvitation } from "@/lib/invitations";
+import { createCopyablePortalSetupLink, sendPortalInvitation } from "@/lib/invitations";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -16,6 +16,11 @@ export type AdminActionState = {
 };
 
 export type InviteActionState = AdminActionState;
+
+export type CopySetupLinkState = AdminActionState & {
+  expiresAt?: string;
+  setupUrl?: string;
+};
 
 const optionalUrl = z.preprocess(
   (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
@@ -318,6 +323,51 @@ export async function sendMspSetupLink(
   revalidatePath(`/admin/msps/${msp.id}`);
   revalidatePath("/admin");
   return { status: result.ok ? "success" : "error", message: result.message };
+}
+
+export async function generateMspSetupLink(
+  _previousState: CopySetupLinkState,
+  formData: FormData,
+): Promise<CopySetupLinkState> {
+  const inviter = await requireAdminProfile();
+  const parsed = sendMspSetupLinkSchema.safeParse({ mspId: formData.get("mspId") });
+  if (!parsed.success) return { status: "error", message: "That MSP portal could not be found." };
+
+  const admin = createAdminSupabaseClient();
+  const { data: msp } = await admin
+    .from("msps")
+    .select("id, cohort_id, name, primary_contact_email, primary_contact_name, status")
+    .eq("id", parsed.data.mspId)
+    .maybeSingle();
+
+  if (!msp || msp.status !== "active") {
+    return { status: "error", message: "That MSP portal is not active." };
+  }
+  if (!msp.primary_contact_email || !msp.primary_contact_name) {
+    return { status: "error", message: "Add the main contact’s name and email before creating access." };
+  }
+
+  const requestHeaders = await headers();
+  const appUrl = process.env.APP_URL ?? requestHeaders.get("origin") ?? "http://localhost:3000";
+  const result = await createCopyablePortalSetupLink({
+    appUrl,
+    email: msp.primary_contact_email,
+    fullName: msp.primary_contact_name,
+    invitedBy: inviter.id,
+    mspId: msp.id,
+    role: "msp_owner",
+  });
+
+  revalidatePath(`/admin/cohorts/${msp.cohort_id}`);
+  revalidatePath(`/admin/msps/${msp.id}`);
+  if (!result.ok) return { status: "error", message: result.message };
+
+  return {
+    expiresAt: result.expiresAt,
+    message: `A reusable 72-hour setup link is ready for ${msp.primary_contact_email}.`,
+    setupUrl: result.setupUrl,
+    status: "success",
+  };
 }
 
 export async function updateGroupSession(

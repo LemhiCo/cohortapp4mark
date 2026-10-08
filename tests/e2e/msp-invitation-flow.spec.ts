@@ -46,7 +46,8 @@ async function authLinkFor(email: string) {
       };
       const body = `${detail.Text ?? ""}\n${detail.HTML ?? ""}`;
       const links = body.match(/https?:\/\/[^\s"'<>]+/g) ?? [];
-      const match = links.find((link) => link.includes("/auth/v1/verify") || link.includes("/auth/confirm"));
+      const match = links.find((link) => link.includes("/auth/confirm"))
+        ?? links.find((link) => link.includes("/auth/v1/verify"));
       if (match) return match.replaceAll("&amp;", "&");
     }
     await new Promise((resolve) => setTimeout(resolve, 250));
@@ -55,6 +56,7 @@ async function authLinkFor(email: string) {
 }
 
 test.describe("MSP invitation and password setup", () => {
+  test.describe.configure({ mode: "serial" });
   test.skip(!canRun, "Runs only against a local Supabase stack and local app.");
   test.setTimeout(60_000);
 
