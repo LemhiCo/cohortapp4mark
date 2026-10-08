@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test:e2e": "playwright test",
-    "test:prod:setup": "RUN_PRODUCTION_SMOKE=1 PLAYWRIGHT_BASE_URL=https://orientation.lemhi.ai node --env-file=.env.production.local ./node_modules/@playwright/test/cli.js test tests/e2e/production-setup-link.spec.ts --project=desktop-chrome",
+    "test:prod:setup": "RUN_PRODUCTION_SMOKE=1 PLAYWRIGHT_BASE_URL=https://orientation.lemhi.ai node --env-file=.env.production.local ./node_modules/@playwright/test/cli.js test tests/e2e/production-setup-link.spec.ts --workers=1",
     "supabase:start": "supabase start",
     "supabase:stop": "supabase stop",
     "supabase:reset": "supabase db reset",

@@ -16,15 +16,16 @@ The test creates temporary MSP records prefixed with `[E2E]` only inside `Cohort
 
 1. An admin can create an MSP portal inside `Cohort test 2`.
 2. The admin can generate a link on the canonical `orientation.lemhi.ai` domain.
-3. The invitation record expires approximately 72 hours after generation.
-4. Opening and reloading the setup page does not consume the link.
-5. Continuing once and closing the browser before choosing a password does not consume the original link.
-6. The same original link works in a separate fresh browser.
-7. The MSP can create a password and reaches its own Cohort page.
-8. The MSP can later sign in using that email and password.
-9. The MSP cannot open the admin portal.
-10. Database row-level security lets the MSP read its own MSP record but not another MSP or that MSP's invitations.
-11. The setup link stops working after password setup completes.
+3. Generating a replacement invalidates the older copied link while the new link works.
+4. The invitation record expires approximately 72 hours after generation.
+5. Opening and reloading the setup page does not consume the link.
+6. Continuing once and closing the browser before choosing a password does not consume the original link.
+7. The same original link works in a separate fresh browser.
+8. The MSP can create a password and reaches its own Cohort page.
+9. The MSP can later sign in using that email and password.
+10. The MSP cannot open the admin portal.
+11. Database row-level security lets the MSP read its own MSP record but not another MSP or that MSP's invitations.
+12. The setup link stops working after password setup completes.
 
 This smoke test intentionally does not send an email. It validates the manual 72-hour setup-link path independently of SMTP delivery and spam filtering.
 

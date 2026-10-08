@@ -83,8 +83,23 @@ test.describe("Production client setup smoke test", () => {
       page.once("dialog", (dialog) => dialog.accept());
       await card.getByRole("button", { name: "Generate copyable link" }).click();
       await expect(card.getByRole("status")).toContainText("reusable 72-hour setup link");
+      const firstSetupUrl = await card.getByLabel("Secure setup link").inputValue();
+      expect(firstSetupUrl).toMatch(/^https:\/\/orientation\.lemhi\.ai\/setup#token=/);
+
+      // A deliberate replacement must invalidate the older copied link while
+      // leaving the newly generated link reusable for the full setup flow.
+      page.once("dialog", (dialog) => dialog.accept());
+      await card.getByRole("button", { name: "Generate copyable link" }).click();
+      await expect.poll(() => card.getByLabel("Secure setup link").inputValue()).not.toBe(firstSetupUrl);
       const setupUrl = await card.getByLabel("Secure setup link").inputValue();
       expect(setupUrl).toMatch(/^https:\/\/orientation\.lemhi\.ai\/setup#token=/);
+
+      const replacedContext = await browser.newContext();
+      const replacedPage = await replacedContext.newPage();
+      await replacedPage.goto(firstSetupUrl);
+      await replacedPage.getByRole("button", { name: "Continue securely" }).click();
+      await expect(replacedPage.getByRole("status")).toContainText("invalid, expired, or has been replaced");
+      await replacedContext.close();
 
       const { data: invitation, error: invitationError } = await admin
         .from("invitations")
