@@ -348,7 +348,7 @@ export async function generateMspSetupLink(
   }
 
   const requestHeaders = await headers();
-  const appUrl = process.env.APP_URL ?? requestHeaders.get("origin") ?? "http://localhost:3000";
+  const appUrl = requestHeaders.get("origin") ?? process.env.APP_URL ?? "http://localhost:3000";
   const result = await createCopyablePortalSetupLink({
     appUrl,
     email: msp.primary_contact_email,

@@ -20,6 +20,7 @@
 - `npm run supabase:reset` — rebuild the local database from migrations and seed.
 - `npm run test:db` — run pgTAP database and RLS tests.
 - `npm run test:e2e` — run desktop and mobile Playwright smoke tests against the local app.
+- `npm run test:prod:setup` — guarded live setup/login/RLS smoke test; it may create and then remove only `[E2E]` MSPs in the exact `Cohort test 2` workspace.
 - `npm run db:types` — regenerate `lib/database.types.ts` from the local database.
 - `npm run admin:bootstrap -- name@lemhi.com "Full Name"` — allow-list and invite the first Lemhi admin.
 - `npm run assets:seed -- manifest.json ./starter-files` — upload the 19 program starter files from a completed manifest.

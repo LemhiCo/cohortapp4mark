@@ -20,9 +20,21 @@ function safeNextPath(value: FormDataEntryValue | null, fallback: string) {
 export async function POST(request: NextRequest) {
   const formData = await request.formData();
   const configuredOrigin = new URL(process.env.APP_URL ?? request.url).origin;
-  const responseOrigin = process.env.NODE_ENV === "production"
-    ? configuredOrigin
-    : request.headers.get("origin") ?? configuredOrigin;
+  const submittedOrigin = request.headers.get("origin");
+  const forwardedHost = (request.headers.get("x-forwarded-host") ?? request.headers.get("host"))
+    ?.split(",")[0]
+    .trim();
+  let responseOrigin = configuredOrigin;
+  if (submittedOrigin) {
+    try {
+      const parsedOrigin = new URL(submittedOrigin);
+      if (process.env.NODE_ENV !== "production" || !forwardedHost || parsedOrigin.host === forwardedHost) {
+        responseOrigin = parsedOrigin.origin;
+      }
+    } catch {
+      // Use the configured origin when an invalid Origin header is supplied.
+    }
+  }
   const code = formData.get("code");
   const tokenHash = formData.get("token_hash");
   const rawType = formData.get("type");
