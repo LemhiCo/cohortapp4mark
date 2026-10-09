@@ -421,7 +421,7 @@ test.describe("Production client setup smoke test", () => {
       await expect(ownerReturnPage).toHaveURL(/\/cohort$/);
       await ownerReturnPage.goto("/team");
       const teammateRow = ownerReturnPage.locator("div.py-4").filter({ hasText: teammateAccount.email });
-      await teammateRow.getByRole("button", { name: "Remove" }).click();
+      await activate(teammateRow.getByRole("button", { name: "Remove" }));
       await expect(teammateRow.getByText("Removed", { exact: true })).toBeVisible();
 
       const removedContext = await browser.newContext();

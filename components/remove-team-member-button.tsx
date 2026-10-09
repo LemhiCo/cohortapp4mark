@@ -15,7 +15,7 @@ export function RemoveTeamMemberButton({ userId }: { userId: string }) {
       <button
         type="submit"
         disabled={pending}
-        className="min-h-10 rounded-md border border-[#D5A485] px-3 text-sm font-semibold text-[#7A3B18] transition hover:bg-[#F7E4D6] disabled:opacity-50"
+        className="min-h-11 rounded-md border border-[#D5A485] px-3 text-sm font-semibold text-[#7A3B18] transition hover:bg-[#F7E4D6] disabled:opacity-50"
       >
         {pending ? "Removing…" : "Remove"}
       </button>

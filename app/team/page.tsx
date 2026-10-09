@@ -36,10 +36,10 @@ export default async function TeamPage() {
           <h2 className="font-serif text-3xl font-bold text-dark-evergreen">Members</h2>
           <div className="mt-6 divide-y divide-line">
             {members?.map((member) => (
-              <div className="flex items-center justify-between gap-4 py-4" key={member.id}>
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 py-4" key={member.id}>
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-semibold text-dark-evergreen">{member.full_name || member.email}</p>
+                    <p className="min-w-0 truncate font-semibold text-dark-evergreen">{member.full_name || member.email}</p>
                     {member.role === "msp_owner" ? (
                       <span className="rounded-full bg-sage px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-dark-evergreen">
                         Main contact
