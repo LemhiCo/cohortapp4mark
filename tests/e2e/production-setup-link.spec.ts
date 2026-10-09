@@ -60,6 +60,11 @@ test.describe("Production client setup smoke test", () => {
         .single();
       if (cohortError || cohort.name !== testCohortName) throw cohortError ?? new Error("Cohort test 2 was not found.");
       cohortId = cohort.id;
+      const { error: resetStatusError } = await admin
+        .from("cohorts")
+        .update({ status_override: null })
+        .eq("id", cohortId);
+      if (resetStatusError) throw resetStatusError;
 
       const otherMsp = await admin.from("msps").insert({
         cohort_id: cohortId,
@@ -520,6 +525,10 @@ test.describe("Production client setup smoke test", () => {
       for (const userId of userIds) {
         const { error } = await admin.auth.admin.deleteUser(userId);
         if (error && !error.message.toLowerCase().includes("not found")) throw error;
+      }
+      if (cohortId) {
+        const { error } = await admin.from("cohorts").update({ status_override: null }).eq("id", cohortId);
+        if (error) throw error;
       }
     }
   });
