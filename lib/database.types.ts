@@ -582,6 +582,7 @@ export type Database = {
           created_at: string
           email: string
           expires_at: string
+          full_name: string
           id: string
           invited_by: string
           last_sent_at: string
@@ -596,6 +597,7 @@ export type Database = {
           created_at?: string
           email: string
           expires_at?: string
+          full_name?: string
           id?: string
           invited_by: string
           last_sent_at?: string
@@ -610,6 +612,7 @@ export type Database = {
           created_at?: string
           email?: string
           expires_at?: string
+          full_name?: string
           id?: string
           invited_by?: string
           last_sent_at?: string
@@ -1497,3 +1500,4 @@ export const Constants = {
     },
   },
 } as const
+

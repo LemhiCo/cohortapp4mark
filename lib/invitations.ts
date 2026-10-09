@@ -120,6 +120,7 @@ export async function createCopyablePortalSetupLink(input: CopyableSetupLink) {
       .update({
         auth_user_id: existingProfile?.id ?? null,
         expires_at: expiresAt,
+        full_name: input.fullName,
         invited_by: input.invitedBy,
         last_sent_at: issuedAt,
       })
@@ -135,6 +136,7 @@ export async function createCopyablePortalSetupLink(input: CopyableSetupLink) {
         auth_user_id: existingProfile?.id ?? null,
         email,
         expires_at: expiresAt,
+        full_name: input.fullName,
         invited_by: input.invitedBy,
         last_sent_at: issuedAt,
         msp_id: input.mspId,

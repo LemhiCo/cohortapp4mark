@@ -245,6 +245,7 @@ test.describe("Production client setup smoke test", () => {
       await setupPage.getByRole("button", { name: "Save password and continue" }).click();
       await expect(setupPage).toHaveURL(/\/cohort$/);
       await expect(setupPage.getByText(mspName, { exact: true }).first()).toBeVisible();
+      await expect(setupPage.getByText(ownerAccount.name, { exact: true })).toBeVisible();
       await setupContext.close();
 
       const { data: ownerProfile, error: ownerError } = await admin
@@ -369,12 +370,13 @@ test.describe("Production client setup smoke test", () => {
 
       const { data: teammateProfile, error: teammateError } = await admin
         .from("profiles")
-        .select("id, msp_id, role, password_setup_required")
+        .select("id, full_name, msp_id, role, password_setup_required")
         .eq("email", teammateAccount.email)
         .single();
       if (teammateError) throw teammateError;
       teammateUserId = teammateProfile.id;
       expect(teammateProfile.msp_id).toBe(mspId);
+      expect(teammateProfile.full_name).toBe(teammateAccount.name);
       expect(teammateProfile.role).toBe("msp_member");
       expect(teammateProfile.password_setup_required).toBe(false);
 

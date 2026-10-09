@@ -27,7 +27,7 @@ export async function redeemSetupLink(
   const admin = createAdminSupabaseClient();
   const { data: invitation, error: invitationError } = await admin
     .from("invitations")
-    .select("id, email, msp_id, role, status, expires_at, last_sent_at")
+    .select("id, email, full_name, msp_id, role, status, expires_at, last_sent_at")
     .eq("id", setupToken.invitationId)
     .maybeSingle();
 
@@ -74,7 +74,7 @@ export async function redeemSetupLink(
     : await admin.auth.admin.generateLink({
       email: invitation.email,
       options: {
-        data: { full_name: msp.primary_contact_name ?? "" },
+        data: { full_name: invitation.full_name || msp.primary_contact_name || "" },
         redirectTo: `${appUrl}/set-password`,
       },
       type: "invite",
