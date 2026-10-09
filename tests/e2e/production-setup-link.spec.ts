@@ -105,6 +105,13 @@ test.describe("Production client setup smoke test", () => {
       if (mspError) throw mspError;
       mspId = msp.id;
 
+      await page.goto(`/admin/msps/${mspId}/preview/team`);
+      await expect(page.getByRole("heading", { name: "Your team" })).toBeVisible();
+      await expect(page.getByRole("link", { name: "Team" })).toHaveAttribute("aria-current", "page");
+      await expect(page.getByRole("button", { name: "Generate teammate link" })).toBeDisabled();
+      await expect(page.getByText("Preview only—these controls cannot create or remove access.")).toBeVisible();
+      await page.goto(`/admin/cohorts/${cohortId}`);
+
       const { data: weekOne, error: weekError } = await admin
         .from("cohort_weeks")
         .select("id")

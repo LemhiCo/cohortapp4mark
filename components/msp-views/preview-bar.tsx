@@ -1,11 +1,12 @@
 import Link from "next/link";
 
-type PreviewPage = "cohort" | "checklist" | "library";
+type PreviewPage = "cohort" | "checklist" | "library" | "team";
 
 const pages: Array<{ id: PreviewPage; label: string }> = [
   { id: "cohort", label: "Roadmap" },
   { id: "checklist", label: "Checklist" },
   { id: "library", label: "Library" },
+  { id: "team", label: "Team" },
 ];
 
 export function MspPreviewBar({ active, mspId, mspName }: { active: PreviewPage; mspId: string; mspName: string }) {
