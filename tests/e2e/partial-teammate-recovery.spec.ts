@@ -19,7 +19,7 @@ test.describe("Interrupted teammate setup recovery", () => {
   test.skip(!canRun, "Runs only against a local Supabase stack and local app.");
   test.setTimeout(90_000);
 
-  test("replaces a legacy 24-hour link without duplicating or moving the teammate", async ({ browser, page }) => {
+  test("lets a Lemhi admin replace a legacy 24-hour link without duplicating or moving the teammate", async ({ browser, page }) => {
     const suffix = randomBytes(4).toString("hex");
     const adminAccount = {
       email: `partial-recovery-admin-${suffix}@lemhi.com`,
@@ -34,6 +34,10 @@ test.describe("Interrupted teammate setup recovery", () => {
       email: `partial-recovery-member-${suffix}@example.test`,
       name: `Recovery Member ${suffix}`,
       password: randomBytes(18).toString("base64url"),
+    };
+    const newTeammateAccount = {
+      email: `partial-recovery-new-member-${suffix}@example.test`,
+      name: `New Recovery Member ${suffix}`,
     };
     const admin = createClient(supabaseUrl, secretKey, { auth: { persistSession: false } });
     let adminUserId = "";
@@ -139,12 +143,26 @@ test.describe("Interrupted teammate setup recovery", () => {
       if (legacyInvitationError) throw legacyInvitationError;
       expect(legacyInvitation.auth_user_id).toBe(teammateUserId);
 
-      await page.goto("/team");
-      await page.getByLabel("Name").fill(teammateAccount.name);
-      await page.getByLabel("Work email").fill(teammateAccount.email);
-      await page.getByRole("button", { name: "Generate teammate link" }).click();
-      await expect(page.getByRole("status")).toContainText("reusable 72-hour setup link");
-      const replacementSetupUrl = await page.getByLabel("Secure teammate setup link").inputValue();
+      // An MSP user cannot enter Lemhi's management screen.
+      await page.goto(`/admin/msps/${mspId}/team`);
+      await expect(page).toHaveURL(/\/cohort$/);
+
+      const adminContext = await browser.newContext();
+      const adminPage = await adminContext.newPage();
+      await adminPage.goto("/sign-in");
+      await adminPage.getByLabel("Work email").fill(adminAccount.email);
+      await adminPage.getByLabel("Password", { exact: true }).fill(adminAccount.password);
+      await adminPage.getByRole("button", { name: "Sign in", exact: true }).click();
+      await expect(adminPage).toHaveURL(/\/admin$/);
+      await adminPage.goto(`/admin/msps/${mspId}/team`);
+      await expect(adminPage.getByRole("heading", { name: `Partial recovery MSP ${suffix} team` })).toBeVisible();
+
+      const teammateCard = adminPage.locator("article").filter({ hasText: teammateAccount.email });
+      await expect(teammateCard.getByText("Setup pending")).toBeVisible();
+      adminPage.once("dialog", (dialog) => dialog.accept());
+      await teammateCard.getByRole("button", { name: "Generate replacement link" }).click();
+      await expect(teammateCard.getByRole("status")).toContainText("reusable 72-hour setup link");
+      const replacementSetupUrl = await teammateCard.getByLabel("Secure setup link").inputValue();
       expect(replacementSetupUrl).not.toBe(originalSetupUrl);
 
       const [{ data: invitations, error: invitationsError }, { data: profiles, error: profilesError }] = await Promise.all([
@@ -167,6 +185,27 @@ test.describe("Interrupted teammate setup recovery", () => {
       const validityHours = (Date.parse(invitations![0].expires_at) - Date.now()) / 3_600_000;
       expect(validityHours).toBeGreaterThan(71.9);
       expect(validityHours).toBeLessThanOrEqual(72);
+
+      const addTeammate = adminPage.locator("section").filter({
+        has: adminPage.getByRole("heading", { name: "Generate a teammate link" }),
+      });
+      await addTeammate.getByLabel("Name").fill(newTeammateAccount.name);
+      await addTeammate.getByLabel("Work email").fill(newTeammateAccount.email);
+      adminPage.once("dialog", (dialog) => dialog.accept());
+      await addTeammate.getByRole("button", { name: "Generate teammate link" }).click();
+      await expect(addTeammate.getByRole("status")).toContainText("reusable 72-hour setup link");
+      expect(await addTeammate.getByLabel("Secure setup link").inputValue()).toContain("/setup#token=");
+      const { data: newInvitation, error: newInvitationError } = await admin
+        .from("invitations")
+        .select("msp_id, role, status, expires_at")
+        .eq("email", newTeammateAccount.email)
+        .single();
+      if (newInvitationError) throw newInvitationError;
+      expect(newInvitation).toMatchObject({ msp_id: mspId, role: "msp_member", status: "pending" });
+      const newInviteValidityHours = (Date.parse(newInvitation.expires_at) - Date.now()) / 3_600_000;
+      expect(newInviteValidityHours).toBeGreaterThan(71.9);
+      expect(newInviteValidityHours).toBeLessThanOrEqual(72);
+      await adminContext.close();
 
       const oldLinkContext = await browser.newContext();
       const oldLinkPage = await oldLinkContext.newPage();

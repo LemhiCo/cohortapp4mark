@@ -16,7 +16,10 @@ export function MspPreviewBar({ active, mspId, mspName }: { active: PreviewPage;
         <p className="text-sm font-semibold text-dark-evergreen">
           Viewing as {mspName}. Read-only: nothing here changes their portal.
         </p>
-        <Link className="text-sm font-semibold text-evergreen hover:underline" href={`/admin/msps/${mspId}`}>← Back to MSP admin</Link>
+        <div className="flex flex-wrap items-center gap-3">
+          <Link className="rounded-md bg-evergreen px-3 py-2 text-sm font-semibold text-white hover:bg-dark-evergreen" href={`/admin/msps/${mspId}/team`}>Manage team access</Link>
+          <Link className="text-sm font-semibold text-evergreen hover:underline" href={`/admin/msps/${mspId}`}>← Back to MSP admin</Link>
+        </div>
       </div>
       <nav aria-label="MSP preview" className="mt-3 flex flex-wrap gap-2">
         {pages.map((page) => (

@@ -201,6 +201,10 @@ export default async function AdminMspPage({ params }: { params: Promise<{ mspId
 
           <section className="rounded-xl border border-line bg-paper p-6">
             <div className="flex items-end justify-between gap-4"><div><p className="text-sm font-bold uppercase tracking-[0.16em] text-accent-orange">Access</p><h2 className="mt-2 font-serif text-2xl font-bold text-dark-evergreen">People</h2></div><span className="rounded-full bg-sage px-3 py-1 text-sm font-semibold text-dark-evergreen">{people?.filter((person) => person.active).length ?? 0}</span></div>
+            <p className="mt-3 text-sm leading-6 text-muted">Manage teammate onboarding for this MSP, including fresh links for interrupted setups.</p>
+            <Link className="mt-4 inline-flex min-h-11 items-center rounded-md bg-evergreen px-4 text-sm font-semibold text-white hover:bg-dark-evergreen" href={`/admin/msps/${msp.id}/team`}>
+              Manage team access
+            </Link>
             <div className="mt-5 divide-y divide-line">
               {people?.length ? people.map((person) => <div className="py-3 first:pt-0" key={person.id}><div className="flex flex-wrap items-center justify-between gap-2"><p className="font-semibold text-dark-evergreen">{person.full_name || person.email}</p><span className="text-xs font-bold uppercase text-muted">{person.role === "msp_owner" ? "Main contact" : person.active ? "Member" : "Removed"}</span></div><p className="mt-1 break-all text-sm text-muted">{person.email}</p></div>) : <p className="text-sm text-muted">No one has accepted an invitation yet.</p>}
             </div>

@@ -43,7 +43,18 @@ Open the MSP from **MSP progress** or from the cohort’s **MSP portals** list.
 - **Hide for this MSP** takes a program task off just this MSP’s checklist and out of its progress; **Show again** puts it back.
 - **Add a Week N task for this MSP** adds an extra task that only this MSP sees. **Remove** takes it off again; any past completion stays in the history.
 - **People** lists who has access. **Library** lists exactly which files this MSP can see.
-- **View as MSP** shows that MSP’s Cohort, Checklist, and Library pages exactly as they see them. It is read-only; **Back to MSP admin** returns here.
+- **Manage team access** lets you add teammates or generate a fresh 72-hour link for an interrupted setup. Copy each person’s link and send it privately; this does not create a duplicate account or move them out of the MSP workspace.
+- **View as MSP** shows that MSP’s Cohort, Checklist, Library, and Team pages exactly as they see them. It is read-only; use **Manage team access** in the preview banner when you need to act for the MSP.
+
+## Manage teammate onboarding for an MSP
+
+1. Open the MSP dashboard and click **Manage team access** under **People**. You can also reach it from the **View as MSP** banner.
+2. For someone new, enter their name and email under **Generate a teammate link**. Confirm, then click **Copy link** and send it to that person privately.
+3. For someone marked **Setup pending** or **Link expired**, click **Generate replacement link**, copy the new link, and tell them to disregard the older one.
+4. A replacement keeps the same account and MSP workspace. It does not reset the MSP’s roadmap, checklist, notes, or progress.
+5. The link lasts 72 hours, survives ordinary email-security previews, and closes after the teammate creates a password. **Setup complete** means they can use the normal sign-in page afterward.
+
+Lemhi admins and the MSP’s main contact can both generate teammate links. Regular teammates cannot manage access. Lemhi never chooses or sees a teammate’s password.
 
 ## Share a file, recording, or link
 

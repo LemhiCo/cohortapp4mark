@@ -29,6 +29,8 @@ The test creates temporary MSP records prefixed with `[E2E]` only inside `Cohort
 13. The MSP owner can generate a separate 72-hour teammate link from the Team page.
 14. The teammate link survives preview/reload, completes password setup, and supports later password login.
 15. The teammate receives the `msp_member` role for the same MSP and cannot access the admin portal.
+16. A Lemhi admin can generate a replacement teammate link from **Manage team access** when an older flow created the account but password setup was interrupted.
+17. The replacement preserves the original profile and MSP assignment, creates no duplicate, restores a 72-hour window, invalidates the older link, and supports setup plus a later password sign-in.
 
 This smoke test intentionally does not send an email. The 72-hour copyable setup link is the single visible onboarding path for both MSP owners and teammates, independent of SMTP delivery and spam filtering.
 

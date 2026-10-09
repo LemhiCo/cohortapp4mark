@@ -347,11 +347,20 @@ test.describe("Production client setup smoke test", () => {
       await expect(loginPage.getByText("Your team only", { exact: true })).toBeVisible();
 
       await loginPage.goto("/team");
-      await loginPage.getByLabel("Name").fill(teammateAccount.name);
-      await loginPage.getByLabel("Work email").fill(teammateAccount.email);
-      await loginPage.getByRole("button", { name: "Generate teammate link" }).click();
-      await expect(loginPage.getByRole("status")).toContainText("reusable 72-hour setup link");
-      const teammateSetupUrl = await loginPage.getByLabel("Secure teammate setup link").inputValue();
+      await expect(loginPage.getByRole("button", { name: "Generate teammate link" })).toBeVisible();
+
+      // Lemhi Success can handle teammate onboarding for the MSP without
+      // impersonating its owner or asking the owner to send each link.
+      await page.goto(`/admin/msps/${mspId}/team`);
+      const addTeammate = page.locator("section").filter({
+        has: page.getByRole("heading", { name: "Generate a teammate link" }),
+      });
+      await addTeammate.getByLabel("Name").fill(teammateAccount.name);
+      await addTeammate.getByLabel("Work email").fill(teammateAccount.email);
+      page.once("dialog", (dialog) => dialog.accept());
+      await addTeammate.getByRole("button", { name: "Generate teammate link" }).click();
+      await expect(addTeammate.getByRole("status")).toContainText("reusable 72-hour setup link");
+      const teammateSetupUrl = await addTeammate.getByLabel("Secure setup link").inputValue();
       expect(teammateSetupUrl).toMatch(/^https:\/\/orientation\.lemhi\.ai\/setup#token=/);
       await loginContext.close();
 

@@ -277,6 +277,12 @@ export async function createIndependentMsp(
 
 const sendMspSetupLinkSchema = z.object({ mspId: z.uuid() });
 
+const generateAdminTeammateSetupLinkSchema = z.object({
+  email: z.email().transform((value) => value.trim().toLowerCase()),
+  fullName: z.string().trim().min(2).max(120),
+  mspId: z.uuid(),
+});
+
 export async function generateMspSetupLink(
   _previousState: CopySetupLinkState,
   formData: FormData,
@@ -317,6 +323,56 @@ export async function generateMspSetupLink(
   return {
     expiresAt: result.expiresAt,
     message: `A reusable 72-hour setup link is ready for ${msp.primary_contact_email}.`,
+    setupUrl: result.setupUrl,
+    status: "success",
+  };
+}
+
+export async function generateAdminTeammateSetupLink(
+  _previousState: CopySetupLinkState,
+  formData: FormData,
+): Promise<CopySetupLinkState> {
+  const inviter = await requireAdminProfile();
+  const parsed = generateAdminTeammateSetupLinkSchema.safeParse({
+    email: formData.get("email"),
+    fullName: formData.get("fullName"),
+    mspId: formData.get("mspId"),
+  });
+
+  if (!parsed.success) {
+    return { status: "error", message: "Enter the teammate’s name and a valid work email." };
+  }
+
+  const admin = createAdminSupabaseClient();
+  const { data: msp } = await admin
+    .from("msps")
+    .select("id, name, status")
+    .eq("id", parsed.data.mspId)
+    .maybeSingle();
+
+  if (!msp || msp.status !== "active") {
+    return { status: "error", message: "That MSP portal is not active." };
+  }
+
+  const requestHeaders = await headers();
+  const appUrl = requestHeaders.get("origin") ?? process.env.APP_URL ?? "http://localhost:3000";
+  const result = await createCopyablePortalSetupLink({
+    appUrl,
+    email: parsed.data.email,
+    fullName: parsed.data.fullName,
+    invitedBy: inviter.id,
+    mspId: msp.id,
+    role: "msp_member",
+  });
+
+  revalidatePath(`/admin/msps/${msp.id}`);
+  revalidatePath(`/admin/msps/${msp.id}/team`);
+  revalidatePath(`/admin/msps/${msp.id}/preview/team`);
+  if (!result.ok) return { status: "error", message: result.message };
+
+  return {
+    expiresAt: result.expiresAt,
+    message: `A reusable 72-hour setup link is ready for ${parsed.data.email}.`,
     setupUrl: result.setupUrl,
     status: "success",
   };
