@@ -26,6 +26,9 @@ The test creates temporary MSP records prefixed with `[E2E]` only inside `Cohort
 10. The MSP cannot open the admin portal.
 11. Database row-level security lets the MSP read its own MSP record but not another MSP or that MSP's invitations.
 12. The setup link stops working after password setup completes.
+13. The MSP owner can generate a separate 72-hour teammate link from the Team page.
+14. The teammate link survives preview/reload, completes password setup, and supports later password login.
+15. The teammate receives the `msp_member` role for the same MSP and cannot access the admin portal.
 
 This smoke test intentionally does not send an email. It validates the manual 72-hour setup-link path independently of SMTP delivery and spam filtering.
 

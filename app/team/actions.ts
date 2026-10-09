@@ -5,12 +5,14 @@ import { headers } from "next/headers";
 import { z } from "zod";
 
 import { requireMspProfile } from "@/lib/auth";
-import { sendPortalInvitation } from "@/lib/invitations";
+import { createCopyablePortalSetupLink } from "@/lib/invitations";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 
 export type TeamActionState = {
+  expiresAt?: string;
   status: "idle" | "success" | "error";
   message: string;
+  setupUrl?: string;
 };
 
 const inviteMemberSchema = z.object({
@@ -35,19 +37,24 @@ export async function inviteTeamMember(
   if (!parsed.success) return { status: "error", message: "Enter a name and valid work email." };
 
   const requestHeaders = await headers();
-  const origin = requestHeaders.get("origin") ?? process.env.APP_URL ?? "http://localhost:3000";
+  const appUrl = requestHeaders.get("origin") ?? process.env.APP_URL ?? "http://localhost:3000";
 
-  const result = await sendPortalInvitation({
+  const result = await createCopyablePortalSetupLink({
     ...parsed.data,
+    appUrl,
     invitedBy: inviter.id,
     mspId: inviter.msp_id,
-    redirectTo: `${origin}/auth/confirm`,
     role: "msp_member",
   });
 
   if (!result.ok) return { status: "error", message: result.message };
   revalidatePath("/team");
-  return { status: "success", message: result.message };
+  return {
+    expiresAt: result.expiresAt,
+    message: `A reusable 72-hour setup link is ready for ${parsed.data.email}.`,
+    setupUrl: result.setupUrl,
+    status: "success",
+  };
 }
 
 const removeMemberSchema = z.object({ userId: z.uuid() });

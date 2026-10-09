@@ -17,6 +17,11 @@ const ownerAccount = {
   name: `Production Smoke Owner ${suffix}`,
   password: randomBytes(24).toString("base64url"),
 };
+const teammateAccount = {
+  email: `production-smoke-teammate-${suffix}@example.test`,
+  name: `Production Smoke Teammate ${suffix}`,
+  password: randomBytes(24).toString("base64url"),
+};
 const testCohortName = "Cohort test 2";
 const mspName = `[E2E] Client workspace ${suffix}`;
 const otherMspName = `[E2E] Isolated workspace ${suffix}`;
@@ -28,6 +33,7 @@ test.describe("Production client setup smoke test", () => {
   test("a client can reuse the 72-hour link, create a password, sign in, and access only its MSP", async ({ browser, page }) => {
     const admin = createClient(supabaseUrl, secretKey, { auth: { persistSession: false } });
     let ownerUserId = "";
+    let teammateUserId = "";
     let cohortId = "";
     let mspId = "";
     let otherMspId = "";
@@ -171,7 +177,57 @@ test.describe("Production client setup smoke test", () => {
       await expect(loginPage).toHaveURL(/\/cohort$/);
       await loginPage.goto("/admin");
       await expect(loginPage).toHaveURL(/\/cohort$/);
+
+      await loginPage.goto("/team");
+      await loginPage.getByLabel("Name").fill(teammateAccount.name);
+      await loginPage.getByLabel("Work email").fill(teammateAccount.email);
+      await loginPage.getByRole("button", { name: "Generate teammate link" }).click();
+      await expect(loginPage.getByRole("status")).toContainText("reusable 72-hour setup link");
+      const teammateSetupUrl = await loginPage.getByLabel("Secure teammate setup link").inputValue();
+      expect(teammateSetupUrl).toMatch(/^https:\/\/orientation\.lemhi\.ai\/setup#token=/);
       await loginContext.close();
+
+      const teammatePreviewContext = await browser.newContext();
+      const teammatePreviewPage = await teammatePreviewContext.newPage();
+      await teammatePreviewPage.goto(teammateSetupUrl);
+      await teammatePreviewPage.reload();
+      await teammatePreviewPage.getByRole("button", { name: "Continue securely" }).click();
+      await expect(teammatePreviewPage).toHaveURL(/\/set-password$/);
+      await teammatePreviewContext.close();
+
+      const teammateSetupContext = await browser.newContext();
+      const teammateSetupPage = await teammateSetupContext.newPage();
+      await teammateSetupPage.goto(teammateSetupUrl);
+      await teammateSetupPage.getByRole("button", { name: "Continue securely" }).click();
+      await expect(teammateSetupPage).toHaveURL(/\/set-password$/);
+      await teammateSetupPage.getByLabel("New password", { exact: true }).fill(teammateAccount.password);
+      await teammateSetupPage.getByLabel("Confirm new password").fill(teammateAccount.password);
+      await teammateSetupPage.getByRole("button", { name: "Save password and continue" }).click();
+      await expect(teammateSetupPage).toHaveURL(/\/cohort$/);
+      await expect(teammateSetupPage.getByText(mspName, { exact: true }).first()).toBeVisible();
+      await teammateSetupContext.close();
+
+      const { data: teammateProfile, error: teammateError } = await admin
+        .from("profiles")
+        .select("id, msp_id, role, password_setup_required")
+        .eq("email", teammateAccount.email)
+        .single();
+      if (teammateError) throw teammateError;
+      teammateUserId = teammateProfile.id;
+      expect(teammateProfile.msp_id).toBe(mspId);
+      expect(teammateProfile.role).toBe("msp_member");
+      expect(teammateProfile.password_setup_required).toBe(false);
+
+      const teammateLoginContext = await browser.newContext();
+      const teammateLoginPage = await teammateLoginContext.newPage();
+      await teammateLoginPage.goto("/sign-in");
+      await teammateLoginPage.getByLabel("Work email").fill(teammateAccount.email);
+      await teammateLoginPage.getByLabel("Password", { exact: true }).fill(teammateAccount.password);
+      await teammateLoginPage.getByRole("button", { name: "Sign in", exact: true }).click();
+      await expect(teammateLoginPage).toHaveURL(/\/cohort$/);
+      await teammateLoginPage.goto("/admin");
+      await expect(teammateLoginPage).toHaveURL(/\/cohort$/);
+      await teammateLoginContext.close();
 
       const completedContext = await browser.newContext();
       const completedPage = await completedContext.newPage();
@@ -184,6 +240,10 @@ test.describe("Production client setup smoke test", () => {
         const { data: profile } = await admin.from("profiles").select("id").eq("email", ownerAccount.email).maybeSingle();
         ownerUserId = profile?.id ?? "";
       }
+      if (!teammateUserId) {
+        const { data: profile } = await admin.from("profiles").select("id").eq("email", teammateAccount.email).maybeSingle();
+        teammateUserId = profile?.id ?? "";
+      }
       if (!mspId && cohortId) {
         const { data: msp } = await admin.from("msps").select("id").eq("cohort_id", cohortId).eq("name", mspName).maybeSingle();
         mspId = msp?.id ?? "";
@@ -192,6 +252,7 @@ test.describe("Production client setup smoke test", () => {
         const { data: msp } = await admin.from("msps").select("id").eq("cohort_id", cohortId).eq("name", otherMspName).maybeSingle();
         otherMspId = msp?.id ?? "";
       }
+      if (teammateUserId) await admin.auth.admin.deleteUser(teammateUserId);
       if (ownerUserId) await admin.auth.admin.deleteUser(ownerUserId);
       if (mspId) await admin.from("msps").delete().eq("id", mspId);
       if (otherMspId) await admin.from("msps").delete().eq("id", otherMspId);

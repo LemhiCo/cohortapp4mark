@@ -24,17 +24,23 @@ const ownerAccount = {
   name: `Copy Link Owner ${suffix}`,
   password: randomBytes(18).toString("base64url"),
 };
+const teammateAccount = {
+  email: `copy-link-teammate-${suffix}@example.test`,
+  name: `Copy Link Teammate ${suffix}`,
+  password: randomBytes(18).toString("base64url"),
+};
 const cohortName = `Copy link cohort ${suffix}`;
 const mspName = `Copy link MSP ${suffix}`;
 
 test.describe("Reusable copyable setup link", () => {
   test.skip(!canRun, "Runs only against a local Supabase stack and local app.");
-  test.setTimeout(60_000);
+  test.setTimeout(90_000);
 
   test("lasts 72 hours, survives reopening, and closes after password setup", async ({ browser, page }) => {
     const admin = createClient(supabaseUrl, secretKey, { auth: { persistSession: false } });
     let adminUserId = "";
     let ownerUserId = "";
+    let teammateUserId = "";
     let cohortId = "";
     let mspId = "";
 
@@ -132,6 +138,51 @@ test.describe("Reusable copyable setup link", () => {
       expect(completedProfile!.password_setup_required).toBe(false);
       expect(completedInvitation!.status).toBe("accepted");
 
+      const ownerContext = await browser.newContext();
+      const ownerPage = await ownerContext.newPage();
+      await ownerPage.goto("/sign-in");
+      await ownerPage.getByLabel("Work email").fill(ownerAccount.email);
+      await ownerPage.getByLabel("Password", { exact: true }).fill(ownerAccount.password);
+      await ownerPage.getByRole("button", { name: "Sign in", exact: true }).click();
+      await expect(ownerPage).toHaveURL(/\/cohort$/);
+      await ownerPage.goto("/team");
+      await ownerPage.getByLabel("Name").fill(teammateAccount.name);
+      await ownerPage.getByLabel("Work email").fill(teammateAccount.email);
+      await ownerPage.getByRole("button", { name: "Generate teammate link" }).click();
+      await expect(ownerPage.getByRole("status")).toContainText("reusable 72-hour setup link");
+      const teammateSetupUrl = await ownerPage.getByLabel("Secure teammate setup link").inputValue();
+      expect(teammateSetupUrl).toContain("/setup#token=");
+      await ownerContext.close();
+
+      const teammatePreviewContext = await browser.newContext();
+      const teammatePreviewPage = await teammatePreviewContext.newPage();
+      await teammatePreviewPage.goto(teammateSetupUrl);
+      await teammatePreviewPage.reload();
+      await teammatePreviewPage.getByRole("button", { name: "Continue securely" }).click();
+      await expect(teammatePreviewPage).toHaveURL(/\/set-password$/);
+      await teammatePreviewContext.close();
+
+      const teammateContext = await browser.newContext();
+      const teammatePage = await teammateContext.newPage();
+      await teammatePage.goto(teammateSetupUrl);
+      await teammatePage.getByRole("button", { name: "Continue securely" }).click();
+      await expect(teammatePage).toHaveURL(/\/set-password$/);
+      await teammatePage.getByLabel("New password", { exact: true }).fill(teammateAccount.password);
+      await teammatePage.getByLabel("Confirm new password").fill(teammateAccount.password);
+      await teammatePage.getByRole("button", { name: "Save password and continue" }).click();
+      await expect(teammatePage).toHaveURL(/\/cohort$/);
+      await teammateContext.close();
+
+      const { data: teammateProfile } = await admin
+        .from("profiles")
+        .select("id, role, msp_id, password_setup_required")
+        .eq("email", teammateAccount.email)
+        .single();
+      teammateUserId = teammateProfile!.id;
+      expect(teammateProfile!.role).toBe("msp_member");
+      expect(teammateProfile!.msp_id).toBe(mspId);
+      expect(teammateProfile!.password_setup_required).toBe(false);
+
       const completedContext = await browser.newContext();
       const completedPage = await completedContext.newPage();
       await completedPage.goto(setupUrl);
@@ -139,6 +190,7 @@ test.describe("Reusable copyable setup link", () => {
       await expect(completedPage.getByRole("status")).toContainText("already complete");
       await completedContext.close();
     } finally {
+      if (teammateUserId) await admin.auth.admin.deleteUser(teammateUserId);
       if (ownerUserId) await admin.auth.admin.deleteUser(ownerUserId);
       if (mspId) await admin.from("msps").delete().eq("id", mspId);
       if (cohortId) await admin.from("cohorts").delete().eq("id", cohortId);

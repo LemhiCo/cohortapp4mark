@@ -78,11 +78,11 @@ export default async function TeamPage() {
         <section className="rounded-xl border border-line bg-paper p-6 shadow-[0_18px_50px_rgba(18,19,15,0.06)] sm:p-8">
           <p className="text-sm font-bold uppercase tracking-[0.16em] text-accent-orange">Team access</p>
           <h2 className="mt-3 font-serif text-3xl font-bold text-dark-evergreen">
-            {isOwner ? "Invite a teammate" : "Your main contact manages access"}
+            {isOwner ? "Add a teammate" : "Your main contact manages access"}
           </h2>
           <p className="mt-3 text-base leading-7 text-muted">
             {isOwner
-              ? "Teammates can view your cohort, complete MSP tasks, and join task note threads."
+              ? "Generate a private setup link, then send it directly to your teammate. Teammates can view your cohort, complete MSP tasks, and join task note threads."
               : "Ask your MSP’s main contact if someone needs to be added or removed."}
           </p>
           {isOwner ? <div className="mt-7"><TeamInviteForm /></div> : null}
