@@ -190,9 +190,11 @@ test.describe("Reusable copyable setup link", () => {
       await expect(completedPage.getByRole("status")).toContainText("already complete");
       await completedContext.close();
     } finally {
-      if (teammateUserId) await admin.auth.admin.deleteUser(teammateUserId);
-      if (ownerUserId) await admin.auth.admin.deleteUser(ownerUserId);
+      const userIds = [teammateUserId, ownerUserId].filter(Boolean);
+      if (mspId) await admin.from("invitations").delete().eq("msp_id", mspId);
+      if (mspId) await admin.from("profiles").delete().eq("msp_id", mspId);
       if (mspId) await admin.from("msps").delete().eq("id", mspId);
+      for (const userId of userIds) await admin.auth.admin.deleteUser(userId);
       if (cohortId) await admin.from("cohorts").delete().eq("id", cohortId);
       if (adminUserId) await admin.auth.admin.deleteUser(adminUserId);
       await admin.from("admin_allowlist").delete().eq("email", adminAccount.email);

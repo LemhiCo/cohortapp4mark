@@ -252,10 +252,13 @@ test.describe("Production client setup smoke test", () => {
         const { data: msp } = await admin.from("msps").select("id").eq("cohort_id", cohortId).eq("name", otherMspName).maybeSingle();
         otherMspId = msp?.id ?? "";
       }
-      if (teammateUserId) await admin.auth.admin.deleteUser(teammateUserId);
-      if (ownerUserId) await admin.auth.admin.deleteUser(ownerUserId);
+      const userIds = [teammateUserId, ownerUserId].filter(Boolean);
+      const mspIds = [mspId, otherMspId].filter(Boolean);
+      if (mspIds.length) await admin.from("invitations").delete().in("msp_id", mspIds);
+      if (mspIds.length) await admin.from("profiles").delete().in("msp_id", mspIds);
       if (mspId) await admin.from("msps").delete().eq("id", mspId);
       if (otherMspId) await admin.from("msps").delete().eq("id", otherMspId);
+      for (const userId of userIds) await admin.auth.admin.deleteUser(userId);
     }
   });
 });
