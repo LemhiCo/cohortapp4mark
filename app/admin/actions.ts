@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { requireAdminProfile } from "@/lib/auth";
-import { createCopyablePortalSetupLink, sendPortalInvitation } from "@/lib/invitations";
+import { createCopyablePortalSetupLink } from "@/lib/invitations";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -14,8 +14,6 @@ export type AdminActionState = {
   status: "idle" | "success" | "error";
   message: string;
 };
-
-export type InviteActionState = AdminActionState;
 
 export type CopySetupLinkState = AdminActionState & {
   expiresAt?: string;
@@ -83,12 +81,6 @@ const updateSessionSchema = z.object({
 const updateCohortLeadSchema = z.object({
   cohortId: z.uuid(),
   leadId: z.uuid(),
-});
-
-const inviteOwnerSchema = z.object({
-  email: z.email().transform((value) => value.trim().toLowerCase()),
-  fullName: z.string().trim().min(2).max(120),
-  mspId: z.uuid(),
 });
 
 export async function createCohort(
@@ -285,46 +277,6 @@ export async function createIndependentMsp(
 
 const sendMspSetupLinkSchema = z.object({ mspId: z.uuid() });
 
-export async function sendMspSetupLink(
-  _previousState: InviteActionState,
-  formData: FormData,
-): Promise<InviteActionState> {
-  const inviter = await requireAdminProfile();
-  const parsed = sendMspSetupLinkSchema.safeParse({ mspId: formData.get("mspId") });
-  if (!parsed.success) return { status: "error", message: "That MSP portal could not be found." };
-
-  const admin = createAdminSupabaseClient();
-  const { data: msp } = await admin
-    .from("msps")
-    .select("id, cohort_id, name, primary_contact_email, primary_contact_name, status")
-    .eq("id", parsed.data.mspId)
-    .maybeSingle();
-
-  if (!msp || msp.status !== "active") {
-    return { status: "error", message: "That MSP portal is not active." };
-  }
-  if (!msp.primary_contact_email || !msp.primary_contact_name) {
-    return { status: "error", message: "Add the main contact’s name and email before sending access." };
-  }
-
-  const requestHeaders = await headers();
-  const origin = requestHeaders.get("origin") ?? process.env.APP_URL ?? "http://localhost:3000";
-
-  const result = await sendPortalInvitation({
-    email: msp.primary_contact_email,
-    fullName: msp.primary_contact_name,
-    invitedBy: inviter.id,
-    mspId: msp.id,
-    redirectTo: `${origin}/auth/confirm`,
-    role: "msp_owner",
-  });
-
-  revalidatePath(`/admin/cohorts/${msp.cohort_id}`);
-  revalidatePath(`/admin/msps/${msp.id}`);
-  revalidatePath("/admin");
-  return { status: result.ok ? "success" : "error", message: result.message };
-}
-
 export async function generateMspSetupLink(
   _previousState: CopySetupLinkState,
   formData: FormData,
@@ -452,44 +404,4 @@ export async function updateCohortLead(
   revalidatePath(`/admin/cohorts/${parsed.data.cohortId}`);
   revalidatePath("/admin");
   return { status: "success", message: `${lead.full_name || lead.email} now leads this cohort. MSPs see them on their Cohort page.` };
-}
-
-export async function inviteMspOwner(
-  _previousState: InviteActionState,
-  formData: FormData,
-): Promise<InviteActionState> {
-  const inviter = await requireAdminProfile();
-  const parsed = inviteOwnerSchema.safeParse({
-    email: formData.get("email"),
-    fullName: formData.get("fullName"),
-    mspId: formData.get("mspId"),
-  });
-
-  if (!parsed.success) {
-    return { status: "error", message: "Enter a name, valid email, and MSP portal." };
-  }
-
-  const admin = createAdminSupabaseClient();
-  const { data: msp } = await admin
-    .from("msps")
-    .select("id")
-    .eq("id", parsed.data.mspId)
-    .eq("status", "active")
-    .maybeSingle();
-
-  if (!msp) return { status: "error", message: "That MSP portal is not active." };
-
-  const requestHeaders = await headers();
-  const origin = requestHeaders.get("origin") ?? process.env.APP_URL ?? "http://localhost:3000";
-
-  const result = await sendPortalInvitation({
-    ...parsed.data,
-    invitedBy: inviter.id,
-    redirectTo: `${origin}/auth/confirm`,
-    role: "msp_owner",
-  });
-
-  if (!result.ok) return { status: "error", message: result.message };
-  revalidatePath("/admin");
-  return { status: "success", message: result.message };
 }
