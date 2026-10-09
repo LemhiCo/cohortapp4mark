@@ -30,7 +30,7 @@ The test creates temporary MSP records prefixed with `[E2E]` only inside `Cohort
 14. The teammate link survives preview/reload, completes password setup, and supports later password login.
 15. The teammate receives the `msp_member` role for the same MSP and cannot access the admin portal.
 
-This smoke test intentionally does not send an email. It validates the manual 72-hour setup-link path independently of SMTP delivery and spam filtering.
+This smoke test intentionally does not send an email. The 72-hour copyable setup link is the single visible onboarding path for both MSP owners and teammates, independent of SMTP delivery and spam filtering.
 
 ## Root causes of the earlier failures
 
@@ -49,4 +49,4 @@ There were multiple contributing problems:
 - The original Lemhi link remains reusable until password creation finishes.
 - Creating a newer copied link invalidates the older copied link.
 - Authentication redirects stay on the verified request domain, preserving the secure session cookie.
-- The existing automated Supabase email remains a separate 24-hour path; Mark should use the copyable 72-hour link when he wants to send access manually.
+- The admin and MSP-owner interfaces expose only the copyable 72-hour setup-link workflow, so future accounts do not accidentally fall back to the older one-time email invitation path.

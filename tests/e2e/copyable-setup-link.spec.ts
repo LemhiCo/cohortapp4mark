@@ -14,6 +14,9 @@ const secretKey = process.env.SUPABASE_SECRET_KEY ?? "";
 const baseUrl = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:3000";
 const isLocal = (value: string) => /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?(\/|$)/.test(value);
 const canRun = Boolean(secretKey) && isLocal(supabaseUrl) && isLocal(baseUrl);
+const mailpitUrl = supabaseUrl
+  ? `${new URL(supabaseUrl).protocol}//${new URL(supabaseUrl).hostname}:${Number(new URL(supabaseUrl).port) + 3}`
+  : "";
 const suffix = randomBytes(4).toString("hex");
 const adminAccount = {
   email: `copy-link-admin-${suffix}@lemhi.com`,
@@ -31,6 +34,29 @@ const teammateAccount = {
 };
 const cohortName = `Copy link cohort ${suffix}`;
 const mspName = `Copy link MSP ${suffix}`;
+
+async function recoveryLinkFor(email: string) {
+  const deadline = Date.now() + 10_000;
+  while (Date.now() < deadline) {
+    const list = await fetch(`${mailpitUrl}/api/v1/messages`).then((response) => response.json()) as {
+      messages?: Array<{ ID: string; To?: Array<{ Address?: string }> }>;
+    };
+    const message = list.messages?.find((item) => item.To?.some((recipient) => recipient.Address?.toLowerCase() === email));
+    if (message) {
+      const detail = await fetch(`${mailpitUrl}/api/v1/message/${message.ID}`).then((response) => response.json()) as {
+        HTML?: string;
+        Text?: string;
+      };
+      const body = `${detail.Text ?? ""}\n${detail.HTML ?? ""}`;
+      const links = body.match(/https?:\/\/[^\s"'<>]+/g) ?? [];
+      const match = links.find((link) => link.includes("/auth/confirm"))
+        ?? links.find((link) => link.includes("/auth/v1/verify"));
+      if (match) return match.replaceAll("&amp;", "&");
+    }
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  throw new Error(`No recovery email arrived for ${email}`);
+}
 
 test.describe("Reusable copyable setup link", () => {
   test.skip(!canRun, "Runs only against a local Supabase stack and local app.");
@@ -182,6 +208,38 @@ test.describe("Reusable copyable setup link", () => {
       expect(teammateProfile!.role).toBe("msp_member");
       expect(teammateProfile!.msp_id).toBe(mspId);
       expect(teammateProfile!.password_setup_required).toBe(false);
+
+      // An MSP owner can recover access through the scanner-safe reset flow.
+      const replacementPassword = randomBytes(18).toString("base64url");
+      const recoveryContext = await browser.newContext();
+      const recoveryPage = await recoveryContext.newPage();
+      await recoveryPage.goto("/forgot-password");
+      await recoveryPage.getByLabel("Work email").fill(ownerAccount.email);
+      await recoveryPage.getByRole("button", { name: "Send password-reset link" }).click();
+      await expect(recoveryPage.getByRole("status")).toContainText("password-reset link is on its way");
+      const recoveryUrl = await recoveryLinkFor(ownerAccount.email);
+      await recoveryPage.goto(recoveryUrl);
+      await expect(recoveryPage.getByRole("heading", { name: "Reset your password" })).toBeVisible();
+      await recoveryPage.reload();
+      await recoveryPage.getByRole("button", { name: "Continue securely" }).click();
+      await expect(recoveryPage).toHaveURL(/\/set-password$/);
+      await recoveryPage.getByLabel("New password", { exact: true }).fill(replacementPassword);
+      await recoveryPage.getByLabel("Confirm new password").fill(replacementPassword);
+      await recoveryPage.getByRole("button", { name: "Save password and continue" }).click();
+      await expect(recoveryPage).toHaveURL(/\/cohort$/);
+      await recoveryContext.close();
+
+      const recoveredLoginContext = await browser.newContext();
+      const recoveredLoginPage = await recoveredLoginContext.newPage();
+      await recoveredLoginPage.goto("/sign-in");
+      await recoveredLoginPage.getByLabel("Work email").fill(ownerAccount.email);
+      await recoveredLoginPage.getByLabel("Password", { exact: true }).fill(ownerAccount.password);
+      await recoveredLoginPage.getByRole("button", { name: "Sign in", exact: true }).click();
+      await expect(recoveredLoginPage.getByRole("status")).toContainText("not recognized");
+      await recoveredLoginPage.getByLabel("Password", { exact: true }).fill(replacementPassword);
+      await recoveredLoginPage.getByRole("button", { name: "Sign in", exact: true }).click();
+      await expect(recoveredLoginPage).toHaveURL(/\/cohort$/);
+      await recoveredLoginContext.close();
 
       const completedContext = await browser.newContext();
       const completedPage = await completedContext.newPage();

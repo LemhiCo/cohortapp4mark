@@ -1,6 +1,6 @@
 # Running a cohort: Mark’s guide
 
-Everything below happens at <https://cohortapp4mark.vercel.app> without a developer. Sign in with `mark.creighton@lemhi.com` and your password; you land on **Cohort setup**.
+Everything below happens at <https://orientation.lemhi.ai> without a developer. Sign in with `mark.creighton@lemhi.com` and your password; you land on **Workspaces**.
 
 ## Your weekly check
 
@@ -23,13 +23,13 @@ To take a link down, clear **Join link** and **Save**; MSPs see “Link coming t
 
 **Cohorts** → open the cohort → **Lemhi lead**. Pick someone in **Cohort lead** and click **Save lead**. MSPs see the new lead’s name, title, and email on their Cohort page straight away. Anyone with a Lemhi admin login can be chosen; to add someone to the list, ask Felipe for their admin login.
 
-## Create an MSP and send its access link
+## Create an MSP and share its access link
 
 1. **Cohorts** → open the cohort → **Step 2 · MSP access**.
 2. Enter the MSP name, website, and main contact. Click **Create portal**. This saves the workspace but does not email anyone.
-3. Finish the roster and review the sessions, roadmap, and files. A card marked **Ready to invite** has a saved contact but no access email yet.
-4. Click **Send setup link** on that MSP's card and confirm the recipient. Do this separately for each MSP only when its workspace is ready.
-5. The card shows **Setup link sent** until the contact creates their password, then **Access active**. If the first link expires, wait at least one minute and use **Resend setup link**.
+3. Finish the roster and review the sessions, roadmap, and files. A card marked **Ready to invite** has a saved contact but no active account yet.
+4. Click **Generate copyable link**, copy it, and send it directly to that MSP's main contact. Do this separately for each MSP only when its workspace is ready.
+5. The link lasts 72 hours and can be reopened until the contact finishes password setup. The card changes to **Access active** after setup. If it expires, generate a replacement; the newest link replaces the older one.
 
 To add or correct a contact before sending, open **MSP dashboard**, edit **Main contact** and **Main-contact email**, then **Save settings**. An active owner's email cannot be silently replaced; ask Felipe to transfer or deactivate the account.
 
@@ -96,7 +96,7 @@ Tasks can’t be reordered or moved to another week yet; ask Felipe.
 
 ## Ask Felipe for
 
-- Account transfers, deactivated-owner recovery, or invitation-email delivery problems. Active users can use **Forgot your password?** on the sign-in page.
+- Account transfers or deactivated-owner recovery. Active users can use **Forgot your password?** on the sign-in page.
 - New Lemhi admin logins, for example someone else to lead a cohort.
 - Changing a cohort’s name or start date.
 - Reordering tasks or moving one to another week.

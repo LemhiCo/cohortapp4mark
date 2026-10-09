@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
 import { signIn, type SignInState } from "./actions";
 
@@ -9,6 +9,7 @@ const initialState: SignInState = { status: "idle", message: "" };
 
 export function SignInForm() {
   const [state, formAction, pending] = useActionState(signIn, initialState);
+  const [email, setEmail] = useState("");
 
   return (
     <form action={formAction} className="mt-8 space-y-5">
@@ -21,8 +22,10 @@ export function SignInForm() {
           name="email"
           type="email"
           autoComplete="email"
+          onChange={(event) => setEmail(event.target.value)}
           required
           placeholder="you@company.com"
+          value={email}
           className="min-h-12 w-full rounded-md border border-line bg-white px-4 text-base text-forest-ink shadow-sm placeholder:text-muted/70 focus:border-evergreen focus:outline-none"
         />
       </div>
