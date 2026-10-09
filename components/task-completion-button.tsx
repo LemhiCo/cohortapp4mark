@@ -15,7 +15,7 @@ export function TaskCompletionButton({ completed, taskId }: { completed: boolean
       <button
         aria-label={isCompleted ? "Mark task as not done" : "Mark task as done"}
         aria-pressed={isCompleted}
-        className={`grid size-8 shrink-0 place-items-center rounded-md border-2 text-sm font-bold transition ${
+        className={`grid size-11 shrink-0 place-items-center rounded-md border-2 text-sm font-bold transition sm:size-8 ${
           isCompleted
             ? "border-evergreen bg-evergreen text-white"
             : "border-line bg-white text-transparent hover:border-evergreen"

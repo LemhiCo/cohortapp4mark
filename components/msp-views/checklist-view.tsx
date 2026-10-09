@@ -186,7 +186,7 @@ export async function ChecklistView({ mspId, preview, profile }: ChecklistViewPr
                           {canCheck ? (
                             <TaskCompletionButton completed={Boolean(completion)} taskId={task.id} />
                           ) : (
-                            <div aria-label={completion ? "Complete" : "Not complete"} className={`grid size-8 shrink-0 place-items-center rounded-md border-2 text-sm font-bold ${completion ? "border-evergreen bg-evergreen text-white" : "border-line bg-background text-transparent"}`}>✓</div>
+                            <div aria-label={completion ? "Complete" : "Not complete"} className={`grid size-11 shrink-0 place-items-center rounded-md border-2 text-sm font-bold sm:size-8 ${completion ? "border-evergreen bg-evergreen text-white" : "border-line bg-background text-transparent"}`}>✓</div>
                           )}
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-start justify-between gap-3">

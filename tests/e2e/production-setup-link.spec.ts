@@ -36,8 +36,13 @@ test.describe("Production client setup smoke test", () => {
   test.skip(!enabled, "Requires the explicit production smoke-test command and production environment file.");
   test.setTimeout(150_000);
 
-  test("an MSP can onboard, work weekly, manage its team, and remain isolated", async ({ browser, page }) => {
+  test("an MSP can onboard, work weekly, manage its team, and remain isolated", async ({ browser, page }, testInfo) => {
     const admin = createClient(supabaseUrl, secretKey, { auth: { persistSession: false } });
+    const activate = async (locator: ReturnType<typeof page.locator>) => {
+      await locator.scrollIntoViewIfNeeded();
+      if (testInfo.project.name === "mobile-chrome") await locator.tap();
+      else await locator.click();
+    };
     let ownerUserId = "";
     let teammateUserId = "";
     let cohortId = "";
@@ -292,7 +297,7 @@ test.describe("Production client setup smoke test", () => {
       const ownerTaskCard = loginPage.locator("article").filter({
         has: loginPage.getByRole("heading", { name: mspTasks[0].title, exact: true }),
       });
-      await ownerTaskCard.getByRole("button", { name: "Mark task as done" }).click();
+      await activate(ownerTaskCard.getByRole("button", { name: "Mark task as done" }));
       await expect(ownerTaskCard.getByRole("button", { name: "Mark task as not done" })).toBeVisible();
       await ownerTaskCard.getByText(/^Notes/).click();
       await ownerTaskCard.getByLabel("Add a note").fill(ownerNote);
@@ -392,7 +397,7 @@ test.describe("Production client setup smoke test", () => {
       const teammateTaskCard = teammateLoginPage.locator("article").filter({
         has: teammateLoginPage.getByRole("heading", { name: mspTasks[1].title, exact: true }),
       });
-      await teammateTaskCard.getByRole("button", { name: "Mark task as done" }).click();
+      await activate(teammateTaskCard.getByRole("button", { name: "Mark task as done" }));
       await expect(teammateTaskCard.getByRole("button", { name: "Mark task as not done" })).toBeVisible();
       await teammateTaskCard.getByText(/^Notes/).click();
       await teammateTaskCard.getByLabel("Add a note").fill(teammateNote);
